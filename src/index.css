@@ -1,0 +1,20 @@
+@import "tailwindcss";
+
+@layer utilities {
+  .math-rendered-view .katex-display {
+    margin: 0.5em 0;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding: 0.25em 0;
+  }
+}
+
+@media print {
+  body {
+    background: white !important;
+    color: black !important;
+  }
+  header, footer, button, .print\:hidden {
+    display: none !important;
+  }
+}
