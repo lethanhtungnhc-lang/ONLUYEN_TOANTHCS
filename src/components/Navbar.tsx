@@ -103,8 +103,8 @@ export const Navbar: React.FC<NavbarProps> = ({
           {/* TẢI APP Button */}
           <button
             onClick={onOpenInstall}
-            className="flex items-center gap-1 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold px-2.5 py-1 rounded text-xs transition shadow-sm"
-            title="Cài đặt App trên điện thoại hoặc máy tính"
+            className="flex items-center gap-1.5 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-500 hover:to-amber-600 text-slate-950 font-black px-3 py-1 rounded-lg text-xs transition shadow-sm hover:shadow active:scale-95"
+            title="Cài đặt App cho Android, iPhone, iPad, Laptop, PC (Nhấn vào để cài đặt ngay)"
           >
             <Download className="w-3.5 h-3.5" />
             <span>TẢI APP</span>
@@ -368,6 +368,30 @@ export const Navbar: React.FC<NavbarProps> = ({
               <span>Bảng điều khiển {currentUser.role === 'admin' ? 'Admin' : currentUser.role === 'teacher' ? 'Giáo viên' : 'Học sinh'}</span>
             </button>
           )}
+
+          {/* MOBILE TẢI APP & CẬP NHẬT QUICK ACTIONS */}
+          <div className="pt-2 border-t border-slate-100 dark:border-slate-800 grid grid-cols-2 gap-2">
+            <button
+              onClick={() => {
+                setMobileMenuOpen(false);
+                onOpenInstall();
+              }}
+              className="flex items-center justify-center gap-2 py-2 px-3 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-500 hover:to-amber-600 text-slate-950 font-extrabold rounded-xl text-xs shadow-sm"
+            >
+              <Download className="w-4 h-4" />
+              <span>TẢI APP (1-CHẠM)</span>
+            </button>
+            <button
+              onClick={() => {
+                setMobileMenuOpen(false);
+                onOpenUpdate();
+              }}
+              className="flex items-center justify-center gap-1.5 py-2 px-3 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl text-xs shadow-sm"
+            >
+              <RefreshCw className="w-3.5 h-3.5" />
+              <span>CẬP NHẬT</span>
+            </button>
+          </div>
         </div>
       )}
     </header>
