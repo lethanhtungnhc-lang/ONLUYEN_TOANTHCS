@@ -175,7 +175,7 @@ export const MatrixSpecViewer: React.FC<MatrixSpecViewerProps> = ({
                 : 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300'
             }`}
           >
-            2. Bản đặc tả năng lực
+            2. Bản đặc tả (CV 7991)
           </button>
           <button
             onClick={() => setActiveTab('exam')}
@@ -185,7 +185,7 @@ export const MatrixSpecViewer: React.FC<MatrixSpecViewerProps> = ({
                 : 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300'
             }`}
           >
-            3. Đề kiểm tra (4 phần)
+            3. Đề kiểm tra (CV 7991)
           </button>
           <button
             onClick={() => setActiveTab('rubric')}
@@ -195,7 +195,7 @@ export const MatrixSpecViewer: React.FC<MatrixSpecViewerProps> = ({
                 : 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300'
             }`}
           >
-            4. Hướng dẫn chấm (Bảng)
+            4. Hướng dẫn chấm (CV 7991)
           </button>
         </div>
       </div>
@@ -209,7 +209,7 @@ export const MatrixSpecViewer: React.FC<MatrixSpecViewerProps> = ({
                 {activeMatrix.schoolName}
               </span>
               <h3 className="text-lg font-black text-slate-900 dark:text-white">
-                MA TRẬN ĐỀ KIỂM TRA ĐỊNH KỲ MÔN TOÁN LỚP {activeMatrix.grade}
+                MA TRẬN ĐỀ KIỂM TRA ĐỊNH KỲ MÔN TOÁN LỚP {activeMatrix.grade} THEO CÔNG VĂN 7991
               </h3>
             </div>
             <span className="text-xs px-3 py-1 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 font-bold border border-emerald-300 dark:border-emerald-800">
@@ -351,7 +351,7 @@ export const MatrixSpecViewer: React.FC<MatrixSpecViewerProps> = ({
             <div>
               <div className="font-bold text-xs text-slate-500 uppercase">{activeExam.schoolName}</div>
               <h3 className="text-xl font-black text-slate-900 dark:text-white uppercase mt-0.5">
-                {activeExam.title} (MÃ ĐỀ {activeExam.code})
+                {activeExam.title} (MÃ ĐỀ {activeExam.code}) - CHUẨN CÔNG VĂN 7991
               </h3>
             </div>
             <button

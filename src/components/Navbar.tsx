@@ -4,6 +4,7 @@ import {
   Target,
   Brain,
   Zap,
+  Gamepad2,
   FileSpreadsheet,
   FolderOpen,
   User as UserIcon,
@@ -52,10 +53,11 @@ export const Navbar: React.FC<NavbarProps> = ({
 
   const navItems = [
     { id: 'curriculum', label: 'Học & Ôn tập', icon: BookOpen, desc: 'Toán 6, 7, 8, 9' },
+    { id: 'games3d', label: 'Game Toán 3D', icon: Gamepad2, desc: 'Không gian 3D Khối 6-9' },
     { id: 'admission10', label: 'Tuyển sinh 10', icon: Target, desc: '10 Chuyên đề & Đề thi' },
     { id: 'gifted', label: 'Học sinh Giỏi', icon: Brain, desc: 'HSG 6-9 & 5⭐ Tư duy' },
     { id: 'arena', label: 'Đấu trường', icon: Zap, desc: 'Đấu trí tốc độ' },
-    { id: 'exams', label: 'Đề thi & CV 7991', icon: FileSpreadsheet, desc: 'Ma trận, Đặc tả, Đề' },
+    { id: 'exams', label: 'Đề thi & Ma trận', icon: FileSpreadsheet, desc: 'Ma trận, Đặc tả, Đề (CV 7991)' },
     { id: 'documents', label: 'Tài liệu', icon: FolderOpen, desc: 'PDF, DOCX tham khảo' },
   ];
 
@@ -65,7 +67,7 @@ export const Navbar: React.FC<NavbarProps> = ({
       <div className="bg-gradient-to-r from-blue-700 via-indigo-700 to-blue-800 text-white text-xs px-4 py-1.5 flex flex-wrap items-center justify-between gap-2 shadow-inner">
         <div className="flex items-center gap-2 overflow-hidden text-ellipsis whitespace-nowrap">
           <span className="bg-amber-400 text-slate-900 font-bold px-1.5 py-0.5 rounded text-[10px] uppercase tracking-wider">
-            CV 7991 & GDPT 2018
+            GDPT 2018
           </span>
           <span className="font-medium text-blue-100">
             Trường TH, THCS Nguyễn Hữu Cảnh
@@ -150,8 +152,8 @@ export const Navbar: React.FC<NavbarProps> = ({
             className="flex items-center gap-3 cursor-pointer group select-none"
             onClick={() => setCurrentTab('curriculum')}
           >
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white flex items-center justify-center font-black text-xl shadow-md group-hover:scale-105 transition-transform duration-200">
-              ∑
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-700 via-indigo-600 to-sky-500 text-white flex items-center justify-center font-serif text-2xl font-bold shadow-md group-hover:scale-105 transition-transform duration-200 select-none">
+              π
             </div>
             <div>
               <div className="flex items-center gap-1.5">
@@ -163,7 +165,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                 </span>
               </div>
               <p className="text-[11px] text-slate-500 dark:text-slate-400 -mt-0.5 hidden sm:block">
-                Hệ thống ôn luyện toàn diện chuẩn GDPT 2018 & CV 7991
+                Hệ thống ôn luyện toàn diện chuẩn GDPT 2018
               </p>
             </div>
           </div>

@@ -177,8 +177,11 @@ export const ExamRoom: React.FC<ExamRoomProps> = ({ exam, onBack, onFinishExam }
           <span>Thời gian: <strong>{exam.durationMinutes} phút</strong></span>
           <span>•</span>
           <span>Thang điểm: <strong>10.0 điểm</strong></span>
-          <span>•</span>
           <span>Mã đề: <strong className="text-blue-600">{exam.code}</strong></span>
+          <span>•</span>
+          <span className="px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900/60 dark:text-blue-300 font-extrabold text-[11px] border border-blue-200 dark:border-blue-800">
+            Đề kiểm tra chuẩn Công văn 7991
+          </span>
         </div>
       </div>
 
@@ -350,8 +353,8 @@ export const ExamRoom: React.FC<ExamRoomProps> = ({ exam, onBack, onFinishExam }
                         {/* SECTION 29: HƯỚNG DẪN CHẤM BẢNG THEO CÔNG VĂN 7991 */}
                         {isSubmitted && (
                           <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 space-y-2">
-                            <div className="font-bold text-xs text-blue-600 uppercase">
-                              Barem hướng dẫn chấm chi tiết (Phần IV):
+                            <div className="font-bold text-xs text-blue-600 dark:text-blue-400 uppercase flex items-center gap-1.5">
+                              <span>Barem hướng dẫn chấm chi tiết (theo Công văn 7991):</span>
                             </div>
                             <table className="w-full text-left text-xs border-collapse">
                               <thead>

@@ -9,8 +9,8 @@ export const Footer: React.FC = () => {
           {/* COL 1: BRAND & COPYRIGHT */}
           <div className="space-y-3 md:col-span-1">
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-blue-600 text-white flex items-center justify-center font-black text-lg">
-                ∑
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-blue-700 to-indigo-600 text-white flex items-center justify-center font-serif text-xl font-bold select-none">
+                π
               </div>
               <span className="font-bold text-sm text-white tracking-tight">
                 APP ÔN LUYỆN TOÁN THCS
@@ -59,7 +59,7 @@ export const Footer: React.FC = () => {
               </li>
               <li className="flex items-start gap-1.5">
                 <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0 mt-0.5" />
-                <span>Hướng dẫn định dạng đề Công văn 7991</span>
+                <span>Hướng dẫn khảo thí và đánh giá định kỳ</span>
               </li>
               <li className="flex items-start gap-1.5">
                 <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0 mt-0.5" />

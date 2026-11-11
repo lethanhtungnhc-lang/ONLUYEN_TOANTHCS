@@ -1,0 +1,31 @@
+{
+  "id": "/",
+  "name": "APP ÔN LUYỆN TOÁN THCS",
+  "short_name": "ÔN TOÁN THCS",
+  "description": "Hệ thống Ôn luyện Toán THCS Khối 6-9 © 2026 Teacher Lê Thanh Tùng - Trường TH, THCS Nguyễn Hữu Cảnh",
+  "theme_color": "#2563eb",
+  "background_color": "#ffffff",
+  "display": "standalone",
+  "start_url": "/",
+  "scope": "/",
+  "icons": [
+    {
+      "src": "/pwa-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/pwa-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/pwa-maskable-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

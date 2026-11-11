@@ -1,6 +1,6 @@
 {
   "name": "APP ÔN LUYỆN TOÁN THCS",
-  "description": "Hệ thống Ôn luyện Toán THCS Khối 6-9, Ôn tuyển sinh vào 10, Học sinh giỏi Toán, Ngân hàng đề theo Công văn 7991 GDPT 2018 - TH&THCS Nguyễn Hữu Cảnh",
+  "description": "Hệ thống Ôn luyện Toán THCS Khối 6-9, Ôn tuyển sinh vào 10, Học sinh giỏi Toán, Ngân hàng đề thi GDPT 2018 - TH, THCS Nguyễn Hữu Cảnh",
   "requestFramePermissions": [],
   "majorCapabilities": [
     "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"

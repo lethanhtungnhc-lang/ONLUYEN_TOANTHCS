@@ -73,8 +73,31 @@ export const PWAInstallModal: React.FC<PWAInstallModalProps> = ({
         <div className="p-6 space-y-5">
           {mode === 'install' ? (
             <>
+              {/* APP ICON PREVIEW FEATURING MATHEMATICAL PI (π) */}
+              <div className="flex items-center gap-4 p-4 rounded-2xl bg-gradient-to-r from-blue-50/80 to-indigo-50/80 dark:from-slate-800/80 dark:to-indigo-950/40 border border-blue-100 dark:border-blue-900/60 shadow-inner">
+                <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-blue-700 via-indigo-600 to-sky-500 text-white flex items-center justify-center font-serif text-4xl font-bold shadow-lg shadow-blue-500/25 border-2 border-white/30 shrink-0 select-none">
+                  π
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className="font-extrabold text-slate-900 dark:text-white text-sm tracking-tight truncate">
+                      APP ÔN LUYỆN TOÁN THCS
+                    </span>
+                    <span className="text-[10px] font-extrabold bg-blue-600 text-white px-2 py-0.5 rounded-full shadow-xs shrink-0">
+                      Icon: π
+                    </span>
+                  </div>
+                  <p className="text-xs text-blue-700 dark:text-blue-300 font-medium mt-0.5">
+                    Biểu tượng ứng dụng: Kí hiệu số Pi (π) Toán học
+                  </p>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                    © 2026 Teacher Lê Thanh Tùng • Trường TH, THCS Nguyễn Hữu Cảnh
+                  </p>
+                </div>
+              </div>
+
               <div className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
-                Ứng dụng được thiết kế theo tiêu chuẩn <strong>Progressive Web App (PWA)</strong>, cho phép cài đặt trực tiếp lên điện thoại, máy tính bảng hoặc máy tính mà không cần qua kho ứng dụng.
+                Ứng dụng được thiết kế theo tiêu chuẩn <strong>Progressive Web App (PWA)</strong>, biểu tượng số Pi (π) đặc trưng của Toán học sẽ được thêm vào màn hình chính của bạn.
               </div>
 
               {/* INSTALL STATUS / BUTTONS */}
@@ -151,7 +174,7 @@ export const PWAInstallModal: React.FC<PWAInstallModalProps> = ({
               ) : (
                 <>
                   <div className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
-                    Hệ thống sẽ đồng bộ hóa cơ sở dữ liệu mới nhất, cập nhật ngân hàng câu hỏi GDPT 2018 và nạp tài liệu Công văn 7991 mới nhất từ trường TH, THCS Nguyễn Hữu Cảnh.
+                    Hệ thống sẽ đồng bộ hóa cơ sở dữ liệu mới nhất, cập nhật ngân hàng câu hỏi chuẩn GDPT 2018 và tài liệu khảo thí từ trường TH, THCS Nguyễn Hữu Cảnh.
                   </div>
 
                   <div className="p-4 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-xs text-amber-900 dark:text-amber-200 space-y-1">

@@ -133,7 +133,7 @@ export const SystemGuideModal: React.FC<SystemGuideModalProps> = ({ isOpen, onCl
             <div className="space-y-4">
               <div className="p-4 rounded-2xl bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 text-blue-900 dark:text-blue-200">
                 <h4 className="font-bold text-sm text-blue-800 dark:text-blue-200 mb-1">
-                  1. Kiến trúc hệ thống thống nhất (GDPT 2018 & CV 7991)
+                  1. Kiến trúc hệ thống thống nhất (GDPT 2018)
                 </h4>
                 <p>
                   Ứng dụng được thiết kế theo mô hình <strong>Full-stack Responsive Web App + Progressive Web App (PWA)</strong>, vận hành trên một hệ thống thống nhất, chia sẻ chung cơ sở dữ liệu và phân quyền chặt chẽ giữa 3 nhóm đối tượng: Admin, Giáo viên và Học sinh.

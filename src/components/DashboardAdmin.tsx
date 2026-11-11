@@ -206,7 +206,7 @@ export const DashboardAdmin: React.FC<DashboardAdminProps> = ({
           <div className="text-3xl font-black text-purple-600 font-mono">
             {storageService.getDocuments().length}
           </div>
-          <div className="text-[11px] text-purple-500">CV 7991, barem, PDF</div>
+          <div className="text-[11px] text-purple-500">Đề thi, barem, PDF</div>
         </div>
       </div>
 

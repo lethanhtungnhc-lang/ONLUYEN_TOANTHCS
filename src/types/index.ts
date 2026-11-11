@@ -260,6 +260,10 @@ export interface GiftedTopic {
   thinkingIdea: string;
   methods: string[];
   challenges: ThinkingChallenge[];
+  officialScope?: string; // Mạch và câu hỏi theo công văn Sở GD&ĐT
+  standardTheorems?: { name: string; latex?: string; description?: string; statement?: string; explanation?: string; usageTip?: string }[];
+  theoryGuide?: string;
+  masterExamples?: { title: string; problem: string; analysis: string; solution: string; comment: string }[];
 }
 
 export interface ExamResult {

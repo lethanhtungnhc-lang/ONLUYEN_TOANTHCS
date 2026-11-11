@@ -17,12 +17,15 @@ import { DashboardAdmin } from './components/DashboardAdmin';
 import { AICoachModal } from './components/AICoachModal';
 import { AIGenerateExamModal } from './components/AIGenerateExamModal';
 import { SystemGuideModal } from './components/SystemGuideModal';
+import { MathGames3DHub } from './components/games3d/MathGames3DHub';
 import { storageService } from './services/storageService';
 import { User, Lesson, Exam, ThinkingChallenge, GradeLevel } from './types';
 
 export default function App() {
   const [currentUser, setCurrentUser] = useState<User | null>(storageService.getCurrentSession());
   const [currentTab, setCurrentTab] = useState<string>('curriculum');
+  const [target3DGameId, setTarget3DGameId] = useState<string | undefined>(undefined);
+  const [target3DGrade, setTarget3DGrade] = useState<GradeLevel>(6);
   const [systemGuideOpen, setSystemGuideOpen] = useState(false);
   const [darkMode, setDarkMode] = useState<boolean>(() => {
     if (typeof window !== 'undefined') {
@@ -130,6 +133,11 @@ export default function App() {
         {currentTab === 'curriculum' && (
           <GradeCurriculum
             onStartPractice={handleStartPractice}
+            onOpenGame3D={(gameId, grade) => {
+              setTarget3DGameId(gameId);
+              if (grade) setTarget3DGrade(grade);
+              setCurrentTab('games3d');
+            }}
             onOpenExamForGrade={(grade) => {
               const all = storageService.getExams().filter((e) => e.grade === grade);
               if (all.length > 0) {
@@ -139,6 +147,14 @@ export default function App() {
                 setCurrentTab('exams');
               }
             }}
+          />
+        )}
+
+        {currentTab === 'games3d' && (
+          <MathGames3DHub
+            initialGrade={target3DGrade}
+            initialGameId={target3DGameId}
+            onBackToCurriculum={() => setCurrentTab('curriculum')}
           />
         )}
 

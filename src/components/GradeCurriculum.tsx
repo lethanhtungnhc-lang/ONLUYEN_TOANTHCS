@@ -17,26 +17,30 @@ import {
   Target,
   RotateCcw,
   Award,
+  Gamepad2,
 } from 'lucide-react';
 import { Chapter, Lesson, GradeLevel, Semester, Question } from '../types';
 import { storageService } from '../services/storageService';
 import MathView from '../utils/mathRender';
 import { playCorrectSound, playIncorrectSound, playFanfareSound } from '../utils/soundEffects';
+import { MATH_GAMES_3D_LIST } from '../data/mathGames3DData';
 
 interface GradeCurriculumProps {
   onStartPractice: (lesson: Lesson) => void;
   onOpenExamForGrade: (grade: GradeLevel) => void;
+  onOpenGame3D?: (gameId?: string, grade?: GradeLevel) => void;
 }
 
 export const GradeCurriculum: React.FC<GradeCurriculumProps> = ({
   onStartPractice,
   onOpenExamForGrade,
+  onOpenGame3D,
 }) => {
   const [selectedGrade, setSelectedGrade] = useState<GradeLevel>(9);
   const [selectedSemester, setSelectedSemester] = useState<Semester | 'all'>('all');
   const [selectedChapter, setSelectedChapter] = useState<Chapter | null>(null);
   const [selectedLesson, setSelectedLesson] = useState<Lesson | null>(null);
-  const [activeSectionTab, setActiveSectionTab] = useState<'all' | 'theory' | 'formulas' | 'examples' | 'methods' | 'mistakes' | 'practice'>('all');
+  const [activeSectionTab, setActiveSectionTab] = useState<'all' | 'game3d' | 'theory' | 'formulas' | 'examples' | 'methods' | 'mistakes' | 'practice'>('all');
 
   // Self-practice state
   const [userPracticeAnswers, setUserPracticeAnswers] = useState<Record<string, string>>({});
@@ -423,20 +427,37 @@ export const GradeCurriculum: React.FC<GradeCurriculumProps> = ({
                 </p>
               </div>
 
-              <div className="flex items-center gap-3 shrink-0">
+              <div className="flex flex-wrap items-center gap-3 shrink-0">
+                {selectedLesson && (
+                  <button
+                    onClick={() => {
+                      const related =
+                        MATH_GAMES_3D_LIST.find(
+                          (g) =>
+                            g.grade === selectedLesson.grade &&
+                            (g.lessonId === selectedLesson.id || g.chapterId === selectedLesson.chapterId)
+                        ) || MATH_GAMES_3D_LIST.find((g) => g.grade === selectedLesson.grade);
+                      onOpenGame3D?.(related?.id, selectedLesson.grade);
+                    }}
+                    className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-purple-600 via-indigo-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white font-bold text-xs shadow-md transition cursor-pointer"
+                  >
+                    <Gamepad2 className="w-4 h-4 text-amber-300" />
+                    <span>🎮 GAME TOÁN 3D</span>
+                  </button>
+                )}
                 <button
                   onClick={() => {
                     const el = document.getElementById('lesson-self-practice-section');
                     if (el) el.scrollIntoView({ behavior: 'smooth' });
                   }}
-                  className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-bold text-xs shadow-md transition"
+                  className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-bold text-xs shadow-md transition"
                 >
                   <Award className="w-4 h-4" />
                   <span>XUỐNG PHẦN TỰ LUYỆN ↓</span>
                 </button>
                 <button
                   onClick={() => onStartPractice(selectedLesson)}
-                  className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold text-xs shadow-md transition"
+                  className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold text-xs shadow-md transition"
                 >
                   <PlayCircle className="w-4 h-4" />
                   <span>ĐẤU TRƯỜNG LUYỆN TẬP</span>
@@ -448,6 +469,7 @@ export const GradeCurriculum: React.FC<GradeCurriculumProps> = ({
             <div className="flex items-center gap-2 border-t border-slate-200 dark:border-slate-700 pt-3 overflow-x-auto text-xs font-bold">
               {[
                 { id: 'all', label: '📖 Toàn bộ bài học' },
+                { id: 'game3d', label: '🎮 Mô phỏng 3D' },
                 { id: 'theory', label: '1–2. Lý thuyết & Khái niệm' },
                 { id: 'formulas', label: '3. Công thức KaTeX' },
                 { id: 'examples', label: '4. Ví dụ mẫu' },
@@ -474,6 +496,63 @@ export const GradeCurriculum: React.FC<GradeCurriculumProps> = ({
           {/* TEXTBOOK SECTIONS CONTAINER */}
           {/* ============================================================== */}
           <div className="space-y-6">
+            {/* 0. PHÒNG THÍ NGHIỆM & GAME TOÁN 3D BÀI HỌC */}
+            {(activeSectionTab === 'all' || activeSectionTab === 'game3d') && (
+              (() => {
+                const related3DGame =
+                  MATH_GAMES_3D_LIST.find(
+                    (g) =>
+                      g.grade === selectedLesson.grade &&
+                      (g.lessonId === selectedLesson.id || g.chapterId === selectedLesson.chapterId)
+                  ) || MATH_GAMES_3D_LIST.find((g) => g.grade === selectedLesson.grade);
+
+                if (!related3DGame) return null;
+
+                return (
+                  <div className="rounded-3xl bg-gradient-to-r from-blue-950 via-indigo-950 to-slate-900 p-6 sm:p-7 border border-blue-500/40 shadow-xl text-white space-y-4">
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2">
+                          <span className="px-3 py-0.5 rounded-full bg-blue-500/20 text-blue-300 border border-blue-400/30 text-[11px] font-bold">
+                            MÔ PHỎNG HÌNH HỌC 3D
+                          </span>
+                          <span className="text-amber-400 text-xs font-semibold">
+                            Bám sát SGK Kết nối tri thức
+                          </span>
+                        </div>
+                        <h3 className="text-lg sm:text-xl font-black text-white flex items-center gap-2">
+                          <Gamepad2 className="w-5 h-5 text-amber-400 shrink-0" />
+                          <span>{related3DGame.title}</span>
+                        </h3>
+                        <p className="text-xs text-slate-300 max-w-2xl leading-relaxed">
+                          {related3DGame.description}
+                        </p>
+                      </div>
+
+                      <button
+                        onClick={() => onOpenGame3D?.(related3DGame.id, selectedLesson.grade)}
+                        className="shrink-0 flex items-center justify-center gap-2 px-6 py-3.5 rounded-2xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-black text-xs shadow-xl transition transform hover:scale-105 cursor-pointer"
+                      >
+                        <Gamepad2 className="w-4 h-4" />
+                        <span>MỞ PHÒNG GAME 3D NGAY</span>
+                      </button>
+                    </div>
+
+                    <div className="flex flex-wrap gap-2 pt-2 border-t border-indigo-900/60">
+                      {related3DGame.tags.map((tag, idx) => (
+                        <span
+                          key={idx}
+                          className="px-3 py-1 rounded-xl bg-slate-900/70 border border-indigo-500/30 text-indigo-300 text-xs font-medium"
+                        >
+                          ✓ {tag}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })()
+            )}
+
             {/* 1. MỤC TIÊU & YÊU CẦU CẦN ĐẠT */}
             {(activeSectionTab === 'all' || activeSectionTab === 'theory') && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
