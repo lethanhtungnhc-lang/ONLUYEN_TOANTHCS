@@ -18,12 +18,14 @@ import {
   RotateCcw,
   Award,
   Gamepad2,
+  Shuffle,
 } from 'lucide-react';
 import { Chapter, Lesson, GradeLevel, Semester, Question } from '../types';
 import { storageService } from '../services/storageService';
 import MathView from '../utils/mathRender';
 import { playCorrectSound, playIncorrectSound, playFanfareSound } from '../utils/soundEffects';
 import { MATH_GAMES_3D_LIST } from '../data/mathGames3DData';
+import { shuffleQuestionsAndOptions } from '../utils/shuffleUtils';
 
 interface GradeCurriculumProps {
   onStartPractice: (lesson: Lesson) => void;
@@ -78,57 +80,34 @@ export const GradeCurriculum: React.FC<GradeCurriculumProps> = ({
     setSelectedLesson(null);
   };
 
-  // Practice questions for selected lesson
-  const getLessonPracticeQuestions = (): Question[] => {
-    if (!selectedLesson) return [];
-    if (selectedLesson.practiceQuestions && selectedLesson.practiceQuestions.length > 0) {
-      return selectedLesson.practiceQuestions;
+  // Self-practice questions (10 bài tập chuẩn hóa bám sát SGK Kết nối tri thức)
+  const [practiceQuestions, setPracticeQuestions] = useState<Question[]>([]);
+  const [shuffleNotice, setShuffleNotice] = useState<string>('');
+
+  useEffect(() => {
+    if (selectedLesson) {
+      const qs = storageService.getLessonPracticeQuestions(
+        selectedLesson.id,
+        selectedLesson.grade,
+        selectedLesson.title
+      );
+      setPracticeQuestions(qs);
+    } else {
+      setPracticeQuestions([]);
     }
-    // Fallback: search questions in storage for this grade and chapter
-    const stored = storageService.getQuestions({
-      grade: selectedLesson.grade,
-      chapterId: selectedLesson.chapterId,
-    });
-    if (stored.length > 0) return stored.slice(0, 3);
+    setUserPracticeAnswers({});
+    setIsPracticeSubmitted(false);
+  }, [selectedLesson?.id]);
 
-    // Default question if none found
-    return [
-      {
-        id: `pq-fallback-${selectedLesson.id}-1`,
-        code: `TL-${selectedLesson.grade}-01`,
-        grade: selectedLesson.grade,
-        chapterId: selectedLesson.chapterId,
-        lessonId: selectedLesson.id,
-        topic: selectedLesson.title,
-        type: 'multiple_choice',
-        level: 'recognition',
-        content: `Đối với kiến thức trọng tâm của bài: "${selectedLesson.title}", phát biểu nào sau đây là ĐÚNG?`,
-        options: [
-          'A. Nắm vững điều kiện xác định và áp dụng đúng công thức SGK',
-          'B. Không cần kiểm tra điều kiện xác định của biểu thức',
-          'C. Tự ý thay đổi quy tắc tính toán và hằng đẳng thức',
-          'D. Chỉ cần nhớ kết quả mà không cần nắm phương pháp giải',
-        ],
-        correctAnswer: 'A. Nắm vững điều kiện xác định và áp dụng đúng công thức SGK',
-        explanation:
-          'Theo yêu cầu cần đạt của Chương trình GDPT 2018, học sinh bắt buộc phải hiểu rõ bản chất, điều kiện áp dụng và các bước biến đổi của định nghĩa, định lí.',
-        points: 0.25,
-        competency: 'Năng lực tư duy và lập luận toán học',
-        breakdown: {
-          analysis: 'Phân tích yêu cầu cơ bản của bài học theo SGK Kết nối tri thức',
-          givens: 'Kiến thức cốt lõi của bài học',
-          requirements: 'Chọn khẳng định toán học chính xác',
-          formula: 'Quy chuẩn GDPT 2018',
-          method: 'Suy luận logic',
-          steps: ['Đối chiếu từng phương án', 'Phương án A chuẩn xác nhất'],
-          conclusion: 'Đáp án A là đáp án đúng.',
-          commonMistakes: 'Đọc lướt và chọn nhầm phương án thiếu điều kiện.',
-        },
-      },
-    ];
+  const handleShufflePractice = () => {
+    if (practiceQuestions.length === 0) return;
+    const shuffled = shuffleQuestionsAndOptions(practiceQuestions);
+    setPracticeQuestions(shuffled);
+    setUserPracticeAnswers({});
+    setIsPracticeSubmitted(false);
+    setShuffleNotice('Đã đảo ngẫu nhiên 10 câu hỏi & toàn bộ các đáp án A, B, C, D!');
+    setTimeout(() => setShuffleNotice(''), 3500);
   };
-
-  const practiceQuestions = getLessonPracticeQuestions();
 
   // Handle answering practice question
   const handleSelectOption = (questionId: string, option: string) => {
@@ -791,26 +770,45 @@ export const GradeCurriculum: React.FC<GradeCurriculumProps> = ({
               >
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100 dark:border-slate-700">
                   <div className="space-y-1">
-                    <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 uppercase">
-                      Tự luyện trực tiếp sau bài học
-                    </span>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 uppercase">
+                        Tự luyện trực tiếp sau bài học (10 câu)
+                      </span>
+                      <button
+                        onClick={handleShufflePractice}
+                        className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white text-xs font-bold shadow-sm transition active:scale-95 cursor-pointer"
+                        title="Đảo ngẫu nhiên thứ tự câu hỏi và vị trí các đáp án A, B, C, D"
+                      >
+                        <Shuffle className="w-3.5 h-3.5" />
+                        <span>🔀 ĐẢO CÂU HỎI & ĐÁP ÁN</span>
+                      </button>
+                    </div>
                     <h3 className="text-xl font-black text-slate-900 dark:text-white flex items-center gap-2">
                       <Award className="w-6 h-6 text-emerald-600" />
                       <span>VIII. Câu hỏi & Bài tập tự luyện kiến thức</span>
                     </h3>
                     <p className="text-xs text-slate-500 dark:text-slate-400">
-                      Chọn đáp án cho từng câu hỏi bên dưới, sau đó bấm "Kiểm tra đáp án" để nhận phản hồi và lời giải chi tiết.
+                      Hệ thống 10 bài tập bám sát SGK Kết nối tri thức (6 Trắc nghiệm, 2 Đúng/Sai, 2 Trả lời ngắn). Hỗ trợ đảo câu hỏi và đáp án ngẫu nhiên.
                     </p>
                   </div>
 
-                  {isPracticeSubmitted && (
-                    <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-50 dark:bg-emerald-950 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-200 text-xs font-bold shrink-0">
-                      <span>
-                        Kết quả: {correctAnswersCount}/{practiceQuestions.length} câu đúng ({Math.round((correctAnswersCount / (practiceQuestions.length || 1)) * 100)}%)
-                      </span>
-                    </div>
-                  )}
+                  <div className="flex items-center gap-2 shrink-0">
+                    {isPracticeSubmitted && (
+                      <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-50 dark:bg-emerald-950 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-200 text-xs font-bold">
+                        <span>
+                          Kết quả: {correctAnswersCount}/{practiceQuestions.length} câu đúng ({Math.round((correctAnswersCount / (practiceQuestions.length || 1)) * 100)}%)
+                        </span>
+                      </div>
+                    )}
+                  </div>
                 </div>
+
+                {shuffleNotice && (
+                  <div className="p-3 bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-700 rounded-xl text-xs text-amber-800 dark:text-amber-200 flex items-center gap-2 animate-fade-in">
+                    <Sparkles className="w-4 h-4 text-amber-600 shrink-0" />
+                    <span className="font-bold">{shuffleNotice}</span>
+                  </div>
+                )}
 
                 {/* QUESTIONS LIST */}
                 <div className="space-y-6">
@@ -907,7 +905,7 @@ export const GradeCurriculum: React.FC<GradeCurriculumProps> = ({
                               <span>Lời giải & Phân tích chi tiết:</span>
                             </div>
                             <div className="text-slate-600 dark:text-slate-300 leading-relaxed">
-                              <MathView text={q.explanation} />
+                              <MathView text={q.explanation || ''} />
                             </div>
                             {q.breakdown && (
                               <div className="pt-2 border-t border-slate-100 dark:border-slate-700 space-y-1">

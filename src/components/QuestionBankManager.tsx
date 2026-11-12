@@ -63,10 +63,10 @@ export const QuestionBankManager: React.FC<QuestionBankManagerProps> = ({ onBack
 
   const handleOpenEdit = (q: Question) => {
     setEditingId(q.id);
-    setGrade(q.grade);
-    setTopic(q.topic);
+    setGrade(q.grade || 9);
+    setTopic(q.topic || 'Toán học');
     setType(q.type);
-    setLevel(q.level);
+    setLevel((q.level || q.difficulty || 'recognition') as any);
     setContent(q.content);
     if (q.options && q.options.length >= 4) {
       setOptA(q.options[0]);
@@ -74,9 +74,9 @@ export const QuestionBankManager: React.FC<QuestionBankManagerProps> = ({ onBack
       setOptC(q.options[2]);
       setOptD(q.options[3]);
     }
-    setCorrectAnswer(String(q.correctAnswer));
-    setExplanation(q.explanation);
-    setPoints(q.points);
+    setCorrectAnswer(String(q.correctAnswer || ''));
+    setExplanation(q.explanation || '');
+    setPoints(q.points ?? 0.25);
     setCompetency(q.competency || 'Tư duy và lập luận toán học');
     setModalOpen(true);
   };
@@ -148,9 +148,9 @@ export const QuestionBankManager: React.FC<QuestionBankManagerProps> = ({ onBack
   const filteredQuestions = questions.filter((q) => {
     const matchSearch =
       q.content.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      q.topic.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchGrade = selectedGrade === 'all' || q.grade.toString() === selectedGrade;
-    const matchLevel = selectedLevel === 'all' || q.level === selectedLevel;
+      (q.topic || '').toLowerCase().includes(searchQuery.toLowerCase());
+    const matchGrade = selectedGrade === 'all' || (q.grade || 9).toString() === selectedGrade;
+    const matchLevel = selectedLevel === 'all' || (q.level || q.difficulty) === selectedLevel;
     return matchSearch && matchGrade && matchLevel;
   });
 

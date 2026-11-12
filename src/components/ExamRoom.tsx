@@ -13,11 +13,13 @@ import {
   Sparkles,
   BarChart,
   BookOpen,
+  Shuffle,
 } from 'lucide-react';
 import { Exam, ExamResult, Question } from '../types';
 import { storageService } from '../services/storageService';
 import { playCorrectSound, playFanfareSound } from '../utils/soundEffects';
 import MathView from '../utils/mathRender';
+import { shuffleExamPaper } from '../utils/shuffleUtils';
 
 interface ExamRoomProps {
   exam: Exam;
@@ -26,11 +28,23 @@ interface ExamRoomProps {
 }
 
 export const ExamRoom: React.FC<ExamRoomProps> = ({ exam, onBack, onFinishExam }) => {
+  const [currentExam, setCurrentExam] = useState<Exam>(exam);
   const [secondsRemaining, setSecondsRemaining] = useState(exam.durationMinutes * 60);
   const [answers, setAnswers] = useState<Record<string, any>>({});
   const [essayNotes, setEssayNotes] = useState<Record<string, string>>({});
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [submittedResult, setSubmittedResult] = useState<ExamResult | null>(null);
+  const [shuffleNotice, setShuffleNotice] = useState<string>('');
+
+  const handleShuffleExam = () => {
+    if (isSubmitted) return;
+    const shuffled = shuffleExamPaper(currentExam);
+    setCurrentExam(shuffled);
+    setAnswers({});
+    setEssayNotes({});
+    setShuffleNotice(`Đã hoán vị ngẫu nhiên câu hỏi & đáp án! Mã đề hiện tại: ${shuffled.code}`);
+    setTimeout(() => setShuffleNotice(''), 3500);
+  };
 
   // Timer
   useEffect(() => {
@@ -67,13 +81,14 @@ export const ExamRoom: React.FC<ExamRoomProps> = ({ exam, onBack, onFinishExam }
     let wrongCount = 0;
     const topicBreakdownMap: Record<string, { earned: number; total: number }> = {};
 
-    exam.parts.forEach((part) => {
+    currentExam.parts.forEach((part) => {
       part.questions.forEach((q) => {
         const topic = q.topic || 'Toán học';
+        const qPoints = q.points ?? 0.25;
         if (!topicBreakdownMap[topic]) {
           topicBreakdownMap[topic] = { earned: 0, total: 0 };
         }
-        topicBreakdownMap[topic].total += q.points;
+        topicBreakdownMap[topic].total += qPoints;
 
         const userAns = answers[q.id];
         let isCorrect = false;
@@ -85,14 +100,14 @@ export const ExamRoom: React.FC<ExamRoomProps> = ({ exam, onBack, onFinishExam }
         } else if (q.type === 'essay') {
           // For automated preview of essay, grant default 70% or user self-check
           isCorrect = !!essayNotes[q.id];
-          if (isCorrect) earnedPoints += q.points * 0.8;
+          if (isCorrect) earnedPoints += qPoints * 0.8;
           return;
         }
 
         if (isCorrect) {
-          earnedPoints += q.points;
+          earnedPoints += qPoints;
           correctCount++;
-          topicBreakdownMap[topic].earned += q.points;
+          topicBreakdownMap[topic].earned += qPoints;
         } else {
           wrongCount++;
         }
@@ -100,7 +115,7 @@ export const ExamRoom: React.FC<ExamRoomProps> = ({ exam, onBack, onFinishExam }
     });
 
     const score = Math.min(10, Number(earnedPoints.toFixed(2)));
-    const percentage = Math.round((score / exam.totalPoints) * 100);
+    const percentage = Math.round((score / currentExam.totalPoints) * 100);
 
     const breakdownList = Object.entries(topicBreakdownMap).map(([topic, val]) => ({
       topic,
@@ -118,13 +133,13 @@ export const ExamRoom: React.FC<ExamRoomProps> = ({ exam, onBack, onFinishExam }
       userId: currentUser?.id || 'guest',
       userName: currentUser?.fullName || 'Học sinh dự thi',
       className: currentUser?.className || '9A1',
-      examId: exam.id,
-      examTitle: exam.title,
-      examType: exam.examType,
+      examId: currentExam.id,
+      examTitle: currentExam.title,
+      examType: currentExam.examType || 'regular',
       score,
-      maxScore: exam.totalPoints,
+      maxScore: currentExam.totalPoints,
       percentage,
-      timeSpentSeconds: exam.durationMinutes * 60 - secondsRemaining,
+      timeSpentSeconds: currentExam.durationMinutes * 60 - secondsRemaining,
       submittedAt: new Date().toISOString(),
       userAnswers: answers,
       correctCount,
@@ -147,37 +162,58 @@ export const ExamRoom: React.FC<ExamRoomProps> = ({ exam, onBack, onFinishExam }
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-6 space-y-6 animate-fade-in">
-      {/* HEADER WITH TRỞ VỀ & TIMER */}
+      {/* HEADER WITH TRỞ VỀ, TIMER & SHUFFLE BUTTON */}
       <div className="flex items-center justify-between gap-4 pb-4 border-b border-slate-200 dark:border-slate-800">
         <button
           onClick={onBack}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-200 text-xs font-bold transition shadow-sm"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-200 text-xs font-bold transition shadow-sm cursor-pointer"
         >
           <ArrowLeft className="w-4 h-4" />
           <span>← TRỞ VỀ</span>
         </button>
 
-        {!isSubmitted && (
-          <div className="flex items-center gap-2 px-4 py-1.5 rounded-full bg-slate-900 text-amber-400 font-mono text-base font-black shadow-md border border-slate-700">
-            <Clock className="w-4 h-4 animate-spin text-amber-400" />
-            <span>{formatTimer(secondsRemaining)}</span>
-          </div>
-        )}
+        <div className="flex items-center gap-2">
+          {!isSubmitted && (
+            <button
+              onClick={handleShuffleExam}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 hover:from-amber-600 hover:to-orange-600 text-white text-xs font-black shadow-sm transition active:scale-95 cursor-pointer"
+              title="Đảo ngẫu nhiên câu hỏi trong từng phần và hoán vị đáp án A, B, C, D"
+            >
+              <Shuffle className="w-3.5 h-3.5" />
+              <span>🔀 ĐẢO CÂU HỎI & ĐÁP ÁN</span>
+            </button>
+          )}
+
+          {!isSubmitted && (
+            <div className="flex items-center gap-2 px-4 py-1.5 rounded-full bg-slate-900 text-amber-400 font-mono text-base font-black shadow-md border border-slate-700">
+              <Clock className="w-4 h-4 animate-spin text-amber-400" />
+              <span>{formatTimer(secondsRemaining)}</span>
+            </div>
+          )}
+        </div>
       </div>
+
+      {/* SHUFFLE NOTICE TOAST */}
+      {shuffleNotice && (
+        <div className="p-3 bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/40 dark:to-orange-950/30 border border-amber-300 dark:border-amber-700 rounded-2xl text-xs text-amber-800 dark:text-amber-200 flex items-center gap-2 animate-fade-in shadow-sm">
+          <Sparkles className="w-4 h-4 text-amber-600 shrink-0" />
+          <span className="font-bold">{shuffleNotice}</span>
+        </div>
+      )}
 
       {/* EXAM PAPER TITLE HEADER (CHUẨN CÔNG VĂN 7991) */}
       <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-6 shadow-sm text-center space-y-2">
         <div className="text-xs text-slate-500 uppercase tracking-widest font-semibold">
-          {exam.schoolName}
+          {currentExam.schoolName}
         </div>
         <h2 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white uppercase tracking-tight">
-          {exam.title}
+          {currentExam.title}
         </h2>
         <div className="flex flex-wrap items-center justify-center gap-3 text-xs text-slate-500 pt-1">
-          <span>Thời gian: <strong>{exam.durationMinutes} phút</strong></span>
+          <span>Thời gian: <strong>{currentExam.durationMinutes} phút</strong></span>
           <span>•</span>
           <span>Thang điểm: <strong>10.0 điểm</strong></span>
-          <span>Mã đề: <strong className="text-blue-600">{exam.code}</strong></span>
+          <span>Mã đề: <strong className="text-blue-600">{currentExam.code}</strong></span>
           <span>•</span>
           <span className="px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900/60 dark:text-blue-300 font-extrabold text-[11px] border border-blue-200 dark:border-blue-800">
             Đề kiểm tra chuẩn Công văn 7991
@@ -241,7 +277,7 @@ export const ExamRoom: React.FC<ExamRoomProps> = ({ exam, onBack, onFinishExam }
 
       {/* EXAM PARTS 1, 2, 3, 4 */}
       <div className="space-y-6">
-        {exam.parts.map((part) => (
+        {currentExam.parts.map((part) => (
           <div
             key={part.partNumber}
             className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-6 shadow-sm space-y-5"
@@ -369,7 +405,7 @@ export const ExamRoom: React.FC<ExamRoomProps> = ({ exam, onBack, onFinishExam }
                                     • {q.breakdown?.method || 'Nêu điều kiện xác định và phương pháp giải'}
                                   </td>
                                   <td className="py-1.5 text-right font-bold text-slate-700 dark:text-slate-300">
-                                    {(q.points * 0.4).toFixed(2)}đ
+                                    {((q.points ?? 0.25) * 0.4).toFixed(2)}đ
                                   </td>
                                 </tr>
                                 <tr>
@@ -377,7 +413,7 @@ export const ExamRoom: React.FC<ExamRoomProps> = ({ exam, onBack, onFinishExam }
                                     • {q.breakdown?.conclusion || 'Biến đổi tương đương, đối chiếu điều kiện và kết luận'}
                                   </td>
                                   <td className="py-1.5 text-right font-bold text-slate-700 dark:text-slate-300">
-                                    {(q.points * 0.6).toFixed(2)}đ
+                                    {((q.points ?? 0.25) * 0.6).toFixed(2)}đ
                                   </td>
                                 </tr>
                               </tbody>

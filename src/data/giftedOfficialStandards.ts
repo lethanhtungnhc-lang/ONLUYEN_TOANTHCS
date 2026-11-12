@@ -15,11 +15,14 @@ export interface OfficialExamQuestionSpec {
 
 export interface OfficialStandardDoc {
   title: string;
+  agency?: string;
+  durationMinutes?: number;
   effectiveYear: string;
   format: string;
   duration: number; // 150 phút
   totalPoints: number; // 20.0 điểm
   ratio: string; // 40% Biết, 30% Hiểu, 30% Vận dụng
+  structure?: { problem: string; points: number; title: string; subparts: string[] }[];
   domains: {
     name: string;
     points: number;
@@ -39,11 +42,20 @@ export interface OfficialStandardDoc {
 
 export const OFFICIAL_HSG_STANDARD: OfficialStandardDoc = {
   title: 'CẤU TRÚC ĐỊNH DẠNG ĐỀ THI HỌC SINH GIỎI THCS CẤP THÀNH PHỐ TỪ NĂM HỌC 2026 - 2027',
+  agency: 'Sở Giáo dục và Đào tạo',
+  durationMinutes: 150,
   effectiveYear: 'Từ năm học 2026 - 2027',
   format: '100% Tự luận (Không sử dụng trắc nghiệm)',
   duration: 150,
   totalPoints: 20.0,
   ratio: 'Biết: 40% (8,0 điểm) • Hiểu: 30% (6,0 điểm) • Vận dụng: 30% (6,0 điểm)',
+  structure: [
+    { problem: 'Bài 1', points: 5.0, title: 'Đại số cơ bản & Viète', subparts: ['Lệnh 1: Biến đổi đại số, rút gọn (2,5đ)', 'Lệnh 2: Phương trình bậc hai & Viète (2,5đ)'] },
+    { problem: 'Bài 2', points: 4.0, title: 'Đa thức & Hệ phương trình', subparts: ['Lệnh 1: Đa thức, nghiệm & Bézout (2,0đ)', 'Lệnh 2: Phương trình & Hệ phương trình phi tuyến (2,0đ)'] },
+    { problem: 'Bài 3', points: 2.0, title: 'Tổ hợp & Số học', subparts: ['Lệnh 1: Dirichlet / Cực hạn / Bất biến (1,0đ)', 'Lệnh 2: Số học, đồng dư, nghiệm nguyên (1,0đ)'] },
+    { problem: 'Bài 4', points: 2.0, title: 'Bất đẳng thức & Xác suất', subparts: ['Lệnh 1: BĐT AM-GM, Cauchy-Schwarz, cực trị (1,0đ)', 'Lệnh 2: Xác suất & Quy tắc nhân (1,0đ)'] },
+    { problem: 'Bài 5', points: 7.0, title: 'Hình học phẳng', subparts: ['Câu a: Tứ giác nội tiếp, tam giác (3,0đ)', 'Câu b: Đường tròn, tiếp tuyến, góc (3,0đ)', 'Câu c: Phương tích, cát tuyến, cực trị hình (1,0đ)'] },
+  ],
   domains: [
     {
       name: 'Đại số',

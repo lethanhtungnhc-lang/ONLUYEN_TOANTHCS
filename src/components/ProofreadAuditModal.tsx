@@ -39,7 +39,7 @@ export const ProofreadAuditModal: React.FC<ProofreadAuditModalProps> = ({
   const totalExamPoints = exam.totalPoints;
   const isPointsStandard = totalExamPoints === 10.0;
   const hasSchoolName = exam.schoolName.includes('Trường TH, THCS Nguyễn Hữu Cảnh');
-  const hasCopyright = exam.copyright.includes('Teacher Lê Thanh Tùng');
+  const hasCopyright = (exam.copyright || '').includes('Teacher Lê Thanh Tùng');
   const partsCount = exam.parts.length;
   const hasFourParts = partsCount >= 4;
 

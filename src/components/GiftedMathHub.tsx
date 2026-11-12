@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Brain,
   ArrowLeft,
@@ -23,9 +23,20 @@ import {
   Calculator,
   ChevronDown,
   ChevronUp,
+  Clock,
+  Shuffle,
+  Printer,
+  Check,
+  Copy,
+  AlertTriangle,
+  BookMarked,
+  RotateCcw,
+  Zap,
 } from 'lucide-react';
 import { COMPREHENSIVE_GIFTED_TOPICS } from '../data/giftedMathCurriculumData';
 import { OFFICIAL_HSG_STANDARD } from '../data/giftedOfficialStandards';
+import { GIFTED_50_PAGES_BOOK, TextbookPage } from '../data/giftedMath50PagesTextbook';
+import { GIFTED_22_EXAMS, GiftedOfficialExam } from '../data/giftedMath20ExamsData';
 import { GiftedTopic, ThinkingChallenge } from '../types';
 import MathView from '../utils/mathRender';
 
@@ -34,13 +45,14 @@ interface GiftedMathHubProps {
 }
 
 export const GiftedMathHub: React.FC<GiftedMathHubProps> = ({ onOpenAICoach }) => {
-  const [activeHubView, setActiveHubView] = useState<'topics' | 'standards' | 'theorems' | 'mock_exam'>('topics');
+  // Main view state
+  const [activeHubView, setActiveHubView] = useState<'book50' | 'mock22' | 'topics' | 'standards' | 'theorems'>('book50');
   const [selectedGrade, setSelectedGrade] = useState<number>(9);
   const [selectedDomain, setSelectedDomain] = useState<string>('all');
   const [selectedTopic, setSelectedTopic] = useState<GiftedTopic>(COMPREHENSIVE_GIFTED_TOPICS[0]);
   const [activeChallenge, setActiveChallenge] = useState<ThinkingChallenge | null>(null);
 
-  // Progressive hint reveals state (Section 20: Never show full solution right away)
+  // Progressive hint reveals state
   const [revealedHint1, setRevealedHint1] = useState(false);
   const [revealedHint2, setRevealedHint2] = useState(false);
   const [revealedMethodHint, setRevealedMethodHint] = useState(false);
@@ -50,8 +62,43 @@ export const GiftedMathHub: React.FC<GiftedMathHubProps> = ({ onOpenAICoach }) =
   const [selectedTheoremCategory, setSelectedTheoremCategory] = useState<string>('all');
   const [theoremSearch, setTheoremSearch] = useState<string>('');
 
-  // Mock exam expand state
-  const [expandedExamQuestions, setExpandedExamQuestions] = useState<Record<number, boolean>>({ 1: true });
+  // -------------------------------------------------------------
+  // 50-PAGE TEXTBOOK COMPENDIUM STATE
+  // -------------------------------------------------------------
+  const [currentPageNum, setCurrentPageNum] = useState<number>(1);
+  const [bookChapterFilter, setBookChapterFilter] = useState<string>('all');
+  const [bookSearch, setBookSearch] = useState<string>('');
+  const [revealedDrillHints, setRevealedDrillHints] = useState<Record<string, boolean>>({});
+  const [revealedDrillAnswers, setRevealedDrillAnswers] = useState<Record<string, boolean>>({});
+
+  // -------------------------------------------------------------
+  // 22 SIMULATED OFFICIAL EXAMS STATE
+  // -------------------------------------------------------------
+  const [selectedExamIndex, setSelectedExamIndex] = useState<number>(0);
+  const [examSecondsRemaining, setExamSecondsRemaining] = useState<number>(150 * 60);
+  const [isExamTimerRunning, setIsExamTimerRunning] = useState<boolean>(false);
+  const [studentWorkNotes, setStudentWorkNotes] = useState<Record<string, string>>({});
+  const [revealedRubrics, setRevealedRubrics] = useState<Record<string, boolean>>({});
+  const [revealedSolutions, setRevealedSolutions] = useState<Record<string, boolean>>({});
+  const [examShuffleNotice, setExamShuffleNotice] = useState<string>('');
+
+  // Timer effect for 22 simulated exams
+  useEffect(() => {
+    let interval: any = null;
+    if (isExamTimerRunning && examSecondsRemaining > 0) {
+      interval = setInterval(() => {
+        setExamSecondsRemaining((prev) => (prev > 0 ? prev - 1 : 0));
+      }, 1000);
+    }
+    return () => clearInterval(interval);
+  }, [isExamTimerRunning, examSecondsRemaining]);
+
+  const formatExamTimer = (totalSecs: number) => {
+    const hours = Math.floor(totalSecs / 3600);
+    const mins = Math.floor((totalSecs % 3600) / 60);
+    const secs = totalSecs % 60;
+    return `${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  };
 
   const handleSelectChallenge = (ch: ThinkingChallenge) => {
     setActiveChallenge(ch);
@@ -59,13 +106,6 @@ export const GiftedMathHub: React.FC<GiftedMathHubProps> = ({ onOpenAICoach }) =
     setRevealedHint2(false);
     setRevealedMethodHint(false);
     setRevealedFullSolution(false);
-  };
-
-  const toggleExamQuestion = (num: number) => {
-    setExpandedExamQuestions((prev) => ({
-      ...prev,
-      [num]: !prev[num],
-    }));
   };
 
   // Filter topics for the current grade and domain
@@ -85,6 +125,54 @@ export const GiftedMathHub: React.FC<GiftedMathHubProps> = ({ onOpenAICoach }) =
       th.explanation.toLowerCase().includes(theoremSearch.toLowerCase());
     return matchCat && matchSearch;
   });
+
+  // Filtered pages for 50-page book
+  const filteredBookPages = GIFTED_50_PAGES_BOOK.filter((p) => {
+    const matchChap = bookChapterFilter === 'all' || p.chapterId === bookChapterFilter;
+    const matchSearch =
+      !bookSearch ||
+      p.chapterTitle.toLowerCase().includes(bookSearch.toLowerCase()) ||
+      p.topicTitle.toLowerCase().includes(bookSearch.toLowerCase()) ||
+      p.theoryContent.toLowerCase().includes(bookSearch.toLowerCase());
+    return matchChap && matchSearch;
+  });
+
+  const currentPage: TextbookPage =
+    GIFTED_50_PAGES_BOOK.find((p) => p.pageNumber === currentPageNum) || GIFTED_50_PAGES_BOOK[0];
+
+  const currentOfficialExam: GiftedOfficialExam =
+    GIFTED_22_EXAMS[selectedExamIndex] || GIFTED_22_EXAMS[0];
+
+  // Distinct chapter list for dropdown
+  const bookChapters = [
+    { id: 'all', title: 'Tất cả 10 chuyên đề (50 Trang)' },
+    { id: 'ch-01', title: 'Chương 1: Biến đổi đại số & Căn thức (Trang 1-5)' },
+    { id: 'ch-02', title: 'Chương 2: PT bậc hai & Viète mở rộng (Trang 6-10)' },
+    { id: 'ch-03', title: 'Chương 3: Đa thức, Nghiệm & Bézout (Trang 11-15)' },
+    { id: 'ch-04', title: 'Chương 4: PT vô tỉ & Hệ PT phi tuyến (Trang 16-20)' },
+    { id: 'ch-05', title: 'Chương 5: Nguyên lý Dirichlet & Bất biến (Trang 21-25)' },
+    { id: 'ch-06', title: 'Chương 6: Số học & Đồng dư thức (Trang 26-30)' },
+    { id: 'ch-07', title: 'Chương 7: BĐT AM-GM, Cauchy-Schwarz & Cực trị (Trang 31-35)' },
+    { id: 'ch-08', title: 'Chương 8: Xác suất & Quy tắc nhân (Trang 36-40)' },
+    { id: 'ch-09', title: 'Chương 9: Tứ giác nội tiếp & Tiếp tuyến (Trang 41-45)' },
+    { id: 'ch-10', title: 'Chương 10: Phương tích, Bổ đề & Cực trị hình (Trang 46-50)' },
+  ];
+
+  const toggleDrillHint = (id: string) => {
+    setRevealedDrillHints((prev) => ({ ...prev, [id]: !prev[id] }));
+  };
+
+  const toggleDrillAnswer = (id: string) => {
+    setRevealedDrillAnswers((prev) => ({ ...prev, [id]: !prev[id] }));
+  };
+
+  const toggleRubric = (id: string) => {
+    setRevealedRubrics((prev) => ({ ...prev, [id]: !prev[id] }));
+  };
+
+  const toggleSolution = (id: string) => {
+    setRevealedSolutions((prev) => ({ ...prev, [id]: !prev[id] }));
+  };
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6 animate-fade-in text-slate-900 dark:text-slate-100 font-sans">
@@ -109,7 +197,7 @@ export const GiftedMathHub: React.FC<GiftedMathHubProps> = ({ onOpenAICoach }) =
             </h1>
           </div>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-            Biên soạn chi tiết theo <strong className="text-purple-600 dark:text-purple-400 font-semibold">Cấu trúc định dạng đề thi HSG TP từ năm học 2026 - 2027</strong> • Đơn vị: Trường TH, THCS Nguyễn Hữu Cảnh
+            Biên soạn chi tiết theo <strong className="text-purple-600 dark:text-purple-400 font-bold">Cấu trúc đề thi HSG cấp Thành phố từ năm học 2026 - 2027</strong> • Đơn vị: Trường TH, THCS Nguyễn Hữu Cảnh
           </p>
         </div>
 
@@ -137,22 +225,23 @@ export const GiftedMathHub: React.FC<GiftedMathHubProps> = ({ onOpenAICoach }) =
       </div>
 
       {/* ============================================================== */}
-      {/* 4 MAIN HUB TABS */}
+      {/* 5 MAIN HUB TABS */}
       {/* ============================================================== */}
       {!activeChallenge && (
         <div className="flex items-center gap-2 overflow-x-auto pb-1 border-b border-slate-200 dark:border-slate-800">
           {[
-            { id: 'topics', label: '📚 10 Chuyên Đề HSG Trọng Tâm', icon: BookOpen },
-            { id: 'standards', label: '📋 Cấu Trúc Đề Thi 2026 - 2027 (Công Văn)', icon: FileText },
-            { id: 'theorems', label: '⭐ Cẩm Nang Định Lý Được Phép Dùng Như SGK', icon: Sparkles },
-            { id: 'mock_exam', label: '📝 Đề Thi Thử HSG Cấp TP (20 Điểm)', icon: Award },
+            { id: 'book50', label: '📖 Sách Điện Tử 50 Trang Toàn Tập', icon: BookMarked },
+            { id: 'mock22', label: '🏆 Ngân Hàng 22 Đề Thi HSG TP (20 Điểm)', icon: Award },
+            { id: 'topics', label: '📚 10 Chuyên Đề Trọng Tâm', icon: BookOpen },
+            { id: 'standards', label: '📋 Cấu Trúc Đề 2026 - 2027 (Công Văn)', icon: FileText },
+            { id: 'theorems', label: '⭐ Cẩm Nang Định Lý Dùng Như SGK', icon: Sparkles },
           ].map((tab) => {
             const Icon = tab.icon;
             return (
               <button
                 key={tab.id}
                 onClick={() => setActiveHubView(tab.id as any)}
-                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition whitespace-nowrap cursor-pointer ${
+                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-black transition whitespace-nowrap cursor-pointer ${
                   activeHubView === tab.id
                     ? 'bg-purple-600 text-white shadow-md'
                     : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
@@ -167,11 +256,479 @@ export const GiftedMathHub: React.FC<GiftedMathHubProps> = ({ onOpenAICoach }) =
       )}
 
       {/* ============================================================== */}
-      {/* VIEW 1: 10 CHUYÊN ĐỀ BỒI DƯỠNG CHUYÊN SÂU */}
+      {/* VIEW 1: 50-PAGE COMPENDIUM TEXTBOOK READER */}
+      {/* ============================================================== */}
+      {!activeChallenge && activeHubView === 'book50' && (
+        <div className="space-y-6">
+          {/* BOOK TOOLBAR & FILTERS */}
+          <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-4 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-xs font-bold text-slate-500 uppercase">Chương học:</span>
+              <select
+                value={bookChapterFilter}
+                onChange={(e) => {
+                  setBookChapterFilter(e.target.value);
+                  const firstOfChapter = GIFTED_50_PAGES_BOOK.find(
+                    (p) => e.target.value === 'all' || p.chapterId === e.target.value
+                  );
+                  if (firstOfChapter) setCurrentPageNum(firstOfChapter.pageNumber);
+                }}
+                className="px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white text-xs font-bold outline-none"
+              >
+                {bookChapters.map((ch) => (
+                  <option key={ch.id} value={ch.id}>
+                    {ch.title}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="flex items-center gap-3">
+              {/* PAGE JUMP DROPDOWN */}
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold text-slate-500">Chuyển trang:</span>
+                <select
+                  value={currentPageNum}
+                  onChange={(e) => setCurrentPageNum(Number(e.target.value))}
+                  className="px-3 py-1.5 rounded-lg border border-purple-300 dark:border-purple-600 bg-purple-50 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 text-xs font-black outline-none"
+                >
+                  {GIFTED_50_PAGES_BOOK.map((p) => (
+                    <option key={p.pageNumber} value={p.pageNumber}>
+                      Trang {p.pageNumber}: {p.topicTitle.substring(0, 32)}...
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* SEARCH INPUT */}
+              <div className="relative">
+                <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2.5" />
+                <input
+                  type="text"
+                  value={bookSearch}
+                  onChange={(e) => setBookSearch(e.target.value)}
+                  placeholder="Tìm kiếm lý thuyết, ví dụ..."
+                  className="pl-8 pr-3 py-1.5 text-xs rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white outline-none w-48 focus:w-64 transition-all"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* PAGE NAVIGATION BUTTONS */}
+          <div className="flex items-center justify-between gap-2 px-1">
+            <button
+              disabled={currentPageNum <= 1}
+              onClick={() => setCurrentPageNum((prev) => Math.max(1, prev - 1))}
+              className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 text-xs font-bold transition disabled:opacity-40 cursor-pointer flex items-center gap-1.5"
+            >
+              <span>← Trang trước ({currentPageNum > 1 ? currentPageNum - 1 : 1})</span>
+            </button>
+
+            <div className="text-xs font-black text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-950/60 px-4 py-1.5 rounded-full border border-purple-200 dark:border-purple-800">
+              TRANG {currentPage.pageNumber} / {GIFTED_50_PAGES_BOOK.length}
+            </div>
+
+            <button
+              disabled={currentPageNum >= GIFTED_50_PAGES_BOOK.length}
+              onClick={() => setCurrentPageNum((prev) => Math.min(GIFTED_50_PAGES_BOOK.length, prev + 1))}
+              className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold transition disabled:opacity-40 cursor-pointer flex items-center gap-1.5 shadow-sm"
+            >
+              <span>Trang tiếp ({currentPageNum < GIFTED_50_PAGES_BOOK.length ? currentPageNum + 1 : 50}) →</span>
+            </button>
+          </div>
+
+          {/* MAIN PAGE READER SHEET */}
+          <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-6 sm:p-10 shadow-lg space-y-8">
+            {/* PAGE HEADER */}
+            <div className="border-b border-slate-200 dark:border-slate-800 pb-5 space-y-2">
+              <div className="flex items-center justify-between flex-wrap gap-2">
+                <span className="text-xs font-black px-3 py-1 rounded-full bg-purple-100 text-purple-800 dark:bg-purple-950 dark:text-purple-300 uppercase tracking-wider">
+                  {currentPage.chapterTitle}
+                </span>
+                <span className="text-xs font-bold text-slate-400">
+                  Tài liệu chuẩn hóa bồi dưỡng HSG cấp TP • Trang {currentPage.pageNumber}
+                </span>
+              </div>
+
+              <h2 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight">
+                {currentPage.topicTitle}
+              </h2>
+
+              <div className="p-3 bg-purple-50/70 dark:bg-purple-950/40 border border-purple-200 dark:border-purple-800/60 rounded-xl text-xs text-purple-900 dark:text-purple-200 flex items-start gap-2">
+                <Award className="w-4 h-4 text-purple-600 shrink-0 mt-0.5" />
+                <div>
+                  <strong>Vị trí tương ứng trong đề thi chính thức:</strong> {currentPage.officialRef}
+                </div>
+              </div>
+            </div>
+
+            {/* SECTION I: THEORY CONTENT */}
+            <div className="space-y-4">
+              <div className="flex items-center gap-2 text-sm font-black text-slate-900 dark:text-white uppercase tracking-wider">
+                <BookOpen className="w-5 h-5 text-purple-600" />
+                <span>I. Cơ Sở Lý Thuyết & Tư Duy Giải Toán Chuyên Sâu</span>
+              </div>
+              <div className="p-6 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/80 leading-relaxed text-sm text-slate-800 dark:text-slate-200 whitespace-pre-line font-sans">
+                <MathView text={currentPage.theoryContent} />
+              </div>
+            </div>
+
+            {/* SECTION II: THEOREMS */}
+            {currentPage.theorems && currentPage.theorems.length > 0 && (
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 text-sm font-black text-slate-900 dark:text-white uppercase tracking-wider">
+                  <Sparkles className="w-5 h-5 text-amber-500" />
+                  <span>II. Định Lý, Bổ Đề & Hệ Quả Được Phép Dùng Như SGK</span>
+                </div>
+                <div className="grid grid-cols-1 gap-3">
+                  {currentPage.theorems.map((th, idx) => (
+                    <div
+                      key={idx}
+                      className="p-5 rounded-2xl bg-amber-50/60 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/60 space-y-2 text-xs"
+                    >
+                      <div className="font-bold text-sm text-amber-900 dark:text-amber-200 flex items-center gap-2">
+                        <span>⭐ {th.name}</span>
+                      </div>
+                      <div className="p-3 bg-white dark:bg-slate-900 rounded-xl border border-amber-200/60 dark:border-amber-900/40 text-slate-800 dark:text-slate-200 leading-relaxed">
+                        <MathView text={th.statement} />
+                      </div>
+                      {th.note && (
+                        <p className="text-amber-700 dark:text-amber-300 italic">
+                          Lưu ý: {th.note}
+                        </p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* SECTION III: MASTER WORKED EXAMPLES */}
+            {currentPage.masterExamples && currentPage.masterExamples.length > 0 && (
+              <div className="space-y-6">
+                <div className="flex items-center gap-2 text-sm font-black text-slate-900 dark:text-white uppercase tracking-wider">
+                  <Star className="w-5 h-5 text-indigo-600" />
+                  <span>III. Các Ví Dụ Mẫu Kinh Điển (Kèm Phân Tích Phương Pháp)</span>
+                </div>
+
+                <div className="space-y-5">
+                  {currentPage.masterExamples.map((ex, exIdx) => (
+                    <div
+                      key={exIdx}
+                      className="rounded-3xl border border-indigo-200 dark:border-indigo-900/60 bg-white dark:bg-slate-800/80 p-6 sm:p-7 shadow-sm space-y-4"
+                    >
+                      <div className="flex items-center justify-between border-b border-indigo-100 dark:border-indigo-900/40 pb-3">
+                        <h4 className="font-black text-sm sm:text-base text-indigo-900 dark:text-indigo-300">
+                          {ex.title}
+                        </h4>
+                        <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-indigo-100 text-indigo-800 dark:bg-indigo-950 dark:text-indigo-300">
+                          Ví dụ chuẩn hóa
+                        </span>
+                      </div>
+
+                      {/* Problem Statement */}
+                      <div className="p-4 rounded-2xl bg-indigo-50/60 dark:bg-indigo-950/40 border border-indigo-100 dark:border-indigo-900/40 font-semibold text-slate-900 dark:text-white text-sm">
+                        <MathView text={ex.problem} />
+                      </div>
+
+                      {/* Analysis */}
+                      <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-700/80 text-xs space-y-1">
+                        <span className="font-bold text-blue-600 dark:text-blue-400 flex items-center gap-1.5">
+                          <Lightbulb className="w-4 h-4 text-amber-500" />
+                          <span>Phân tích định hướng giải:</span>
+                        </span>
+                        <div className="text-slate-700 dark:text-slate-300 leading-relaxed">
+                          <MathView text={ex.analysis} />
+                        </div>
+                      </div>
+
+                      {/* Step-by-step Solution */}
+                      <div className="p-5 rounded-2xl bg-slate-50/80 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-700 text-xs space-y-2">
+                        <span className="font-bold text-emerald-700 dark:text-emerald-400 flex items-center gap-1.5">
+                          <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                          <span>Lời giải chi tiết chuẩn mực tự luận:</span>
+                        </span>
+                        <div className="text-slate-800 dark:text-slate-200 leading-relaxed whitespace-pre-line text-sm font-serif">
+                          <MathView text={ex.solution} />
+                        </div>
+                      </div>
+
+                      {/* Pedagogy tip */}
+                      {ex.pedagogyTip && (
+                        <div className="p-3.5 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/60 text-xs text-amber-900 dark:text-amber-200 flex items-start gap-2">
+                          <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                          <div>
+                            <strong>Lưu ý sư phạm & Bẫy sai lầm:</strong> {ex.pedagogyTip}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* SECTION IV: DRILL EXERCISES */}
+            {currentPage.drillExercises && currentPage.drillExercises.length > 0 && (
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 text-sm font-black text-slate-900 dark:text-white uppercase tracking-wider">
+                  <Zap className="w-5 h-5 text-emerald-600" />
+                  <span>IV. Bài Tập Tự Luyện Rèn Luyện Tư Duy Sáng Tạo</span>
+                </div>
+
+                <div className="grid grid-cols-1 gap-4">
+                  {currentPage.drillExercises.map((dr, drIdx) => (
+                    <div
+                      key={dr.id}
+                      className="p-5 rounded-2xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 space-y-3 text-xs"
+                    >
+                      <div className="font-bold text-sm text-slate-900 dark:text-white flex items-center gap-2">
+                        <span className="w-6 h-6 rounded-lg bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 flex items-center justify-center font-bold text-xs">
+                          {drIdx + 1}
+                        </span>
+                        <MathView text={dr.question} />
+                      </div>
+
+                      {/* TOGGLES: HINT & FINAL ANSWER */}
+                      <div className="flex items-center gap-2 pt-2 border-t border-slate-200 dark:border-slate-700">
+                        <button
+                          onClick={() => toggleDrillHint(dr.id)}
+                          className="px-3 py-1.5 rounded-lg bg-blue-50 hover:bg-blue-100 dark:bg-blue-950/60 dark:hover:bg-blue-900/60 text-blue-700 dark:text-blue-300 font-bold text-xs transition cursor-pointer flex items-center gap-1"
+                        >
+                          <Lightbulb className="w-3.5 h-3.5" />
+                          <span>{revealedDrillHints[dr.id] ? 'Ẩn gợi ý' : 'Mở gợi ý giải'}</span>
+                        </button>
+
+                        <button
+                          onClick={() => toggleDrillAnswer(dr.id)}
+                          className="px-3 py-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/60 dark:hover:bg-emerald-900/60 text-emerald-700 dark:text-emerald-300 font-bold text-xs transition cursor-pointer flex items-center gap-1"
+                        >
+                          <CheckCircle2 className="w-3.5 h-3.5" />
+                          <span>{revealedDrillAnswers[dr.id] ? 'Ẩn đáp số' : 'Xem đáp số chuẩn'}</span>
+                        </button>
+                      </div>
+
+                      {revealedDrillHints[dr.id] && (
+                        <div className="p-3 bg-blue-50/70 dark:bg-blue-950/40 rounded-xl border border-blue-200 dark:border-blue-800 text-blue-900 dark:text-blue-200 animate-fade-in">
+                          <strong>Gợi ý:</strong> <MathView text={dr.hint} />
+                        </div>
+                      )}
+
+                      {revealedDrillAnswers[dr.id] && (
+                        <div className="p-3 bg-emerald-50/70 dark:bg-emerald-950/40 rounded-xl border border-emerald-200 dark:border-emerald-800 text-emerald-900 dark:text-emerald-200 font-bold animate-fade-in">
+                          ✓ Đáp số: <MathView text={dr.finalAnswer} />
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ============================================================== */}
+      {/* VIEW 2: 22 SIMULATED OFFICIAL EXAMS (CHUẨN 20 ĐIỂM / 150 PHÚT) */}
+      {/* ============================================================== */}
+      {!activeChallenge && activeHubView === 'mock22' && (
+        <div className="space-y-6">
+          {/* EXAM SELECTOR & TIMER BAR */}
+          <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-5 shadow-sm flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <span className="text-xs font-bold text-slate-500 uppercase whitespace-nowrap">
+                Chọn đề thi mô phỏng:
+              </span>
+              <select
+                value={selectedExamIndex}
+                onChange={(e) => {
+                  setSelectedExamIndex(Number(e.target.value));
+                  setExamSecondsRemaining(150 * 60);
+                  setIsExamTimerRunning(false);
+                  setStudentWorkNotes({});
+                }}
+                className="px-3.5 py-2 rounded-xl border border-purple-300 dark:border-purple-600 bg-purple-50 dark:bg-purple-950/60 text-purple-900 dark:text-purple-200 text-xs font-black outline-none"
+              >
+                {GIFTED_22_EXAMS.map((ex, idx) => (
+                  <option key={ex.id} value={idx}>
+                    {ex.title} (Mã: {ex.code})
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* 150 MINUTE TIMER */}
+            <div className="flex items-center gap-3 flex-wrap">
+              <div className="flex items-center gap-2 px-4 py-2 rounded-2xl bg-slate-900 text-amber-400 font-mono text-base font-black shadow-md border border-slate-700">
+                <Clock className="w-4 h-4 animate-spin text-amber-400" />
+                <span>{formatExamTimer(examSecondsRemaining)}</span>
+              </div>
+
+              <button
+                onClick={() => setIsExamTimerRunning((prev) => !prev)}
+                className={`px-3.5 py-2 rounded-xl text-xs font-bold transition shadow-sm cursor-pointer ${
+                  isExamTimerRunning
+                    ? 'bg-amber-600 hover:bg-amber-700 text-white'
+                    : 'bg-emerald-600 hover:bg-emerald-700 text-white'
+                }`}
+              >
+                {isExamTimerRunning ? 'Tạm dừng đếm giờ' : 'Bắt đầu làm bài 150p'}
+              </button>
+
+              <button
+                onClick={() => {
+                  setExamSecondsRemaining(150 * 60);
+                  setIsExamTimerRunning(false);
+                }}
+                className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold transition cursor-pointer"
+                title="Khởi động lại đồng hồ"
+              >
+                <RotateCcw className="w-4 h-4" />
+              </button>
+
+              <button
+                onClick={() => window.print()}
+                className="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold transition cursor-pointer flex items-center gap-1.5"
+              >
+                <Printer className="w-4 h-4" />
+                <span>In đề thi</span>
+              </button>
+            </div>
+          </div>
+
+          {/* OFFICIAL EXAM PAPER SHEET */}
+          <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-6 sm:p-10 shadow-lg space-y-8">
+            {/* EXAM PAPER HEADER */}
+            <div className="border-b-2 border-slate-900 dark:border-slate-700 pb-6 text-center space-y-2">
+              <div className="flex justify-between items-start text-xs font-bold text-slate-600 dark:text-slate-400 uppercase">
+                <div className="text-left">
+                  <span>SỞ GIÁO DỤC VÀ ĐÀO TẠO</span><br />
+                  <strong>TRƯỜNG TH, THCS NGUYỄN HỮU CẢNH</strong>
+                </div>
+                <div className="text-right">
+                  <span>KỲ THI CHỌN HỌC SINH GIỎI CẤP THÀNH PHỐ</span><br />
+                  <span>NĂM HỌC 2026 - 2027</span>
+                </div>
+              </div>
+
+              <h2 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white uppercase tracking-tight pt-2">
+                {currentOfficialExam.title}
+              </h2>
+
+              <div className="flex flex-wrap items-center justify-center gap-3 text-xs text-slate-600 dark:text-slate-400 pt-1">
+                <span>Môn thi: <strong>TOÁN (CẤP THCS)</strong></span>
+                <span>•</span>
+                <span>Thời gian: <strong>150 phút</strong> (không kể thời gian phát đề)</span>
+                <span>•</span>
+                <span>Thang điểm: <strong>20,0 điểm</strong></span>
+                <span>•</span>
+                <span>Mã đề: <strong className="text-purple-600">{currentOfficialExam.code}</strong></span>
+              </div>
+            </div>
+
+            {/* THE 5 QUESTIONS (BÀI 1 ĐẾN BÀI 5) */}
+            <div className="space-y-8">
+              {[
+                { prob: currentOfficialExam.problem1, num: 1 },
+                { prob: currentOfficialExam.problem2, num: 2 },
+                { prob: currentOfficialExam.problem3, num: 3 },
+                { prob: currentOfficialExam.problem4, num: 4 },
+                { prob: currentOfficialExam.problem5, num: 5 },
+              ].map(({ prob, num }) => (
+                <div
+                  key={num}
+                  className="rounded-3xl border border-slate-200 dark:border-slate-800 p-6 sm:p-7 bg-white dark:bg-slate-800/80 shadow-sm space-y-5"
+                >
+                  <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-700 pb-3">
+                    <h3 className="text-base sm:text-lg font-black text-purple-900 dark:text-purple-300">
+                      Bài {num} ({prob.points.toFixed(1).replace('.', ',')} điểm): {prob.title}
+                    </h3>
+                    <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-purple-100 text-purple-800 dark:bg-purple-950 dark:text-purple-300">
+                      {prob.points.toFixed(1).replace('.', ',')}đ
+                    </span>
+                  </div>
+
+                  {/* SUBPARTS */}
+                  <div className="space-y-6">
+                    {prob.subparts.map((sub) => (
+                      <div key={sub.id} className="space-y-3">
+                        <div className="text-sm font-semibold text-slate-900 dark:text-white leading-relaxed">
+                          <strong className="text-purple-600 dark:text-purple-400 mr-1.5">{sub.label}:</strong>
+                          <MathView text={sub.content} />
+                        </div>
+
+                        {/* STUDENT DRAFT PAD */}
+                        <div className="pt-2">
+                          <textarea
+                            value={studentWorkNotes[sub.id] || ''}
+                            onChange={(e) =>
+                              setStudentWorkNotes((prev) => ({ ...prev, [sub.id]: e.target.value }))
+                            }
+                            placeholder="Nháp hướng giải / phác thảo các bước biến đổi của em tại đây..."
+                            className="w-full p-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-xs font-sans text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-purple-500"
+                            rows={3}
+                          />
+                        </div>
+
+                        {/* TOGGLE RUBRIC & SOLUTION */}
+                        <div className="flex items-center gap-2 pt-1">
+                          <button
+                            onClick={() => toggleRubric(sub.id)}
+                            className="px-3 py-1.5 rounded-lg bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/60 dark:hover:bg-amber-900/60 text-amber-800 dark:text-amber-200 text-xs font-bold transition cursor-pointer flex items-center gap-1"
+                          >
+                            <Scale className="w-3.5 h-3.5" />
+                            <span>{revealedRubrics[sub.id] ? 'Ẩn biểu điểm' : '📋 Biểu điểm chấm (Sở GD&ĐT)'}</span>
+                          </button>
+
+                          <button
+                            onClick={() => toggleSolution(sub.id)}
+                            className="px-3 py-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/60 dark:hover:bg-emerald-900/60 text-emerald-800 dark:text-emerald-200 text-xs font-bold transition cursor-pointer flex items-center gap-1"
+                          >
+                            <CheckCircle2 className="w-3.5 h-3.5" />
+                            <span>{revealedSolutions[sub.id] ? 'Ẩn lời giải' : '💡 Lời giải chi tiết'}</span>
+                          </button>
+                        </div>
+
+                        {/* RUBRIC ACCORDION */}
+                        {revealedRubrics[sub.id] && (
+                          <div className="p-4 rounded-xl bg-amber-50/80 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-800 text-xs text-amber-950 dark:text-amber-100 animate-fade-in space-y-1">
+                            <span className="font-bold flex items-center gap-1">
+                              <Scale className="w-3.5 h-3.5" />
+                              <span>Thang điểm chi tiết từng bước:</span>
+                            </span>
+                            <div className="whitespace-pre-line font-sans pl-2 leading-relaxed">
+                              {sub.rubric}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* SOLUTION ACCORDION */}
+                        {revealedSolutions[sub.id] && (
+                          <div className="p-5 rounded-2xl bg-slate-50 dark:bg-slate-900/90 border border-emerald-300 dark:border-emerald-800 text-xs space-y-2 animate-fade-in">
+                            <span className="font-bold text-emerald-700 dark:text-emerald-400 flex items-center gap-1">
+                              <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                              <span>Lời giải chi tiết chuẩn tự luận:</span>
+                            </span>
+                            <div className="whitespace-pre-line font-serif text-sm text-slate-800 dark:text-slate-200 pl-2 leading-relaxed">
+                              <MathView text={sub.solution} />
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ============================================================== */}
+      {/* VIEW 3: 10 CHUYÊN ĐỀ BỒI DƯỠNG TRỌNG TÂM */}
       {/* ============================================================== */}
       {!activeChallenge && activeHubView === 'topics' && (
         <div className="space-y-6">
-          {/* DOMAIN FILTER BUTTONS */}
           <div className="flex flex-wrap items-center gap-2">
             {[
               { id: 'all', label: 'Tất cả mạch kiến thức' },
@@ -196,7 +753,6 @@ export const GiftedMathHub: React.FC<GiftedMathHubProps> = ({ onOpenAICoach }) =
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-            {/* TOPICS LIST SIDEBAR (4 cols) */}
             <div className="lg:col-span-4 space-y-3">
               <div className="text-xs font-bold text-slate-400 uppercase tracking-wider px-1">
                 Danh sách chuyên đề ({availableTopics.length}):
@@ -218,418 +774,279 @@ export const GiftedMathHub: React.FC<GiftedMathHubProps> = ({ onOpenAICoach }) =
                         {topic.domainName}
                       </span>
                       <span className="px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-300 text-[10px]">
-                        {topic.challenges.length} thử thách
+                        {topic.challenges.length} bài toán
                       </span>
                     </div>
-
-                    <h4 className="font-bold text-sm leading-snug">
+                    <h3 className="font-bold text-sm text-slate-900 dark:text-white leading-snug">
                       {topic.title}
-                    </h4>
-
-                    {topic.officialScope && (
-                      <p className="text-[11px] text-slate-500 dark:text-slate-400 line-clamp-1 italic">
-                        {topic.officialScope}
-                      </p>
-                    )}
+                    </h3>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 line-clamp-2">
+                      {topic.description}
+                    </p>
                   </div>
                 ))}
               </div>
             </div>
 
-            {/* TOPIC DETAIL MAIN CONTENT (8 cols) */}
+            {/* TOPIC DETAIL & CHALLENGES (8 cols) */}
             <div className="lg:col-span-8 space-y-6">
-              {/* TOPIC HEADER CARD */}
-              <div className="bg-white dark:bg-slate-800 rounded-3xl border border-slate-200 dark:border-slate-700 p-6 sm:p-7 shadow-sm space-y-4">
-                <div className="space-y-2">
-                  <div className="flex flex-wrap items-center gap-2 text-xs">
-                    <span className="px-3 py-1 rounded-full bg-purple-100 dark:bg-purple-950/80 text-purple-700 dark:text-purple-300 font-bold border border-purple-200 dark:border-purple-800">
-                      {selectedTopic.domainName}
+              <div className="bg-white dark:bg-slate-800 rounded-3xl border border-slate-200 dark:border-slate-700 p-6 sm:p-8 shadow-sm space-y-6">
+                <div>
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-purple-100 text-purple-800 dark:bg-purple-950 dark:text-purple-300 uppercase tracking-wider">
+                      {selectedTopic.domainName} • Khối {selectedTopic.grade}
                     </span>
-                    <span className="text-slate-400">•</span>
-                    <span className="font-semibold text-slate-600 dark:text-slate-300">
-                      Chương trình HSG Toán {selectedTopic.grade}
+                    <span className="text-xs text-slate-400 font-semibold">
+                      Mã chuyên đề: {selectedTopic.id}
                     </span>
                   </div>
-
-                  <h2 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white leading-tight">
+                  <h2 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white mt-2">
                     {selectedTopic.title}
                   </h2>
-
-                  {selectedTopic.officialScope && (
-                    <div className="p-3 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 text-xs text-amber-900 dark:text-amber-200 flex items-start gap-2">
-                      <Sparkles className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-                      <div>
-                        <strong>Phạm vi trong đề thi chính thức:</strong> {selectedTopic.officialScope}
-                      </div>
-                    </div>
-                  )}
+                  <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 mt-1">
+                    {selectedTopic.description}
+                  </p>
                 </div>
 
-                {/* CORE PHILOSOPHY & THINKING IDEA */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
-                  <div className="p-4 rounded-2xl bg-purple-50/50 dark:bg-slate-900/60 border border-purple-200/50 dark:border-slate-700 space-y-1.5">
-                    <span className="font-bold text-purple-700 dark:text-purple-300 flex items-center gap-1.5">
-                      <Lightbulb className="w-4 h-4 text-amber-500" />
-                      <span>Ý tưởng tư duy cốt lõi:</span>
-                    </span>
-                    <p className="leading-relaxed text-slate-700 dark:text-slate-300">
-                      {selectedTopic.thinkingIdea}
-                    </p>
-                  </div>
-
-                  <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-700 space-y-1.5">
-                    <span className="font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
-                      <Layers className="w-4 h-4 text-blue-500" />
-                      <span>Phương pháp giải đặc trưng:</span>
-                    </span>
-                    <ul className="space-y-1 text-slate-600 dark:text-slate-400">
-                      {selectedTopic.methods.map((m, idx) => (
-                        <li key={idx} className="flex items-start gap-1.5">
-                          <span className="w-1.5 h-1.5 rounded-full bg-purple-500 mt-1.5 shrink-0" />
-                          <span>{m}</span>
-                        </li>
-                      ))}
-                    </ul>
+                {/* THEORETICAL FOUNDATION */}
+                <div className="space-y-3">
+                  <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+                    <Layers className="w-4 h-4 text-purple-500" />
+                    <span>Hệ thống kiến thức & Công thức chìa khóa:</span>
+                  </h3>
+                  <div className="p-4 rounded-2xl bg-purple-50/50 dark:bg-purple-950/20 border border-purple-200/60 dark:border-purple-900/40 text-xs sm:text-sm leading-relaxed text-slate-800 dark:text-slate-200 space-y-2 whitespace-pre-line font-sans">
+                    <MathView text={selectedTopic.theoreticalFoundation || selectedTopic.theoryGuide || selectedTopic.corePhilosophy || ''} />
                   </div>
                 </div>
 
-                {/* THEOREMS LIST IN THIS TOPIC */}
-                {selectedTopic.standardTheorems && selectedTopic.standardTheorems.length > 0 && (
-                  <div className="space-y-2 pt-2 border-t border-slate-100 dark:border-slate-700">
-                    <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
-                      Định lý & Hệ thức chuẩn được phép sử dụng:
-                    </span>
-                    <div className="space-y-2">
-                      {selectedTopic.standardTheorems.map((th, i) => (
-                        <div
-                          key={i}
-                          className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-750/40 border border-slate-200/80 dark:border-slate-700 space-y-1"
-                        >
-                          <div className="font-bold text-xs text-purple-700 dark:text-purple-300">
-                            {th.name}
-                          </div>
-                          {th.latex && (
-                            <div className="py-1 font-mono text-xs text-slate-900 dark:text-white">
-                              <MathView text={th.latex} block />
-                            </div>
-                          )}
-                          <div className="text-xs text-slate-600 dark:text-slate-300">
-                            {th.description}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* MASTER EXAMPLES */}
-              {selectedTopic.masterExamples && selectedTopic.masterExamples.length > 0 && (
-                <div className="space-y-4">
-                  <div className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                    <Award className="w-4 h-4 text-amber-500" />
-                    <span>Bài toán Mẫu Kinh Điển (Có hướng dẫn tư duy):</span>
-                  </div>
-
-                  {selectedTopic.masterExamples.map((ex, idx) => (
-                    <div
-                      key={idx}
-                      className="bg-white dark:bg-slate-800 rounded-3xl border border-slate-200 dark:border-slate-700 p-6 shadow-sm space-y-4"
-                    >
-                      <h4 className="font-bold text-sm text-purple-700 dark:text-purple-300">
-                        {ex.title}
-                      </h4>
-
-                      <div className="p-4 rounded-2xl bg-purple-50/50 dark:bg-slate-900/60 border border-purple-200/60 dark:border-slate-700 text-xs sm:text-sm font-semibold text-slate-900 dark:text-white leading-relaxed">
-                        <MathView text={ex.problem} />
-                      </div>
-
-                      <div className="space-y-2 text-xs">
-                        <div className="p-3 rounded-xl bg-amber-50/60 dark:bg-amber-950/30 border border-amber-200/60 dark:border-amber-800/40 text-amber-900 dark:text-amber-200">
-                          <strong>🔍 Phân tích hướng giải:</strong> {ex.analysis}
-                        </div>
-
-                        <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-700 space-y-2 text-slate-800 dark:text-slate-200 leading-relaxed font-serif">
-                          <div className="font-bold text-slate-400 font-sans uppercase text-[11px]">
-                            Lời giải chi tiết:
-                          </div>
-                          <div className="text-xs sm:text-sm whitespace-pre-line">
-                            <MathView text={ex.solution} />
-                          </div>
-                        </div>
-
-                        <div className="p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/40 text-emerald-900 dark:text-emerald-200">
-                          <strong>💡 Bình luận sư phạm:</strong> {ex.comment}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {/* LIST OF THINKING CHALLENGES */}
-              <div className="space-y-4">
-                <div className="text-sm font-bold text-slate-900 dark:text-white flex items-center justify-between">
-                  <span className="flex items-center gap-2">
-                    <Star className="w-4 h-4 text-amber-500 fill-amber-500" />
-                    <span>Bộ Thử Thách Tư Duy Phân Tầng Sao (⭐ 1-5):</span>
-                  </span>
-                  <span className="text-xs text-slate-400">
-                    Bấm để mở phòng tự giải có gợi ý bậc thang
-                  </span>
-                </div>
-
-                <div className="grid grid-cols-1 gap-3">
-                  {selectedTopic.challenges.map((ch) => (
-                    <div
-                      key={ch.id}
-                      onClick={() => handleSelectChallenge(ch)}
-                      className="p-5 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/90 hover:border-purple-400 dark:hover:border-purple-600 cursor-pointer transition shadow-sm hover:shadow-md flex items-center justify-between gap-4 group"
-                    >
-                      <div className="space-y-1.5">
-                        <div className="flex items-center gap-2">
-                          <div className="flex text-amber-400 text-xs">
-                            {Array.from({ length: ch.stars }).map((_, i) => (
-                              <Star key={i} className="w-3.5 h-3.5 fill-amber-400" />
-                            ))}
-                          </div>
-                          <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
-                            Cấp độ: {ch.starLabel}
-                          </span>
-                        </div>
-                        <h5 className="font-bold text-sm text-slate-900 dark:text-white group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors">
-                          <MathView text={ch.title} />
-                        </h5>
-                        <p className="text-xs text-slate-500 dark:text-slate-400 line-clamp-1">
-                          {ch.problem.replace(/\$/g, '')}
-                        </p>
-                      </div>
-
-                      <div className="flex items-center gap-2 text-xs font-bold text-purple-600 dark:text-purple-400 group-hover:translate-x-1 transition shrink-0">
-                        <span>Vào giải</span>
-                        <ChevronRight className="w-4 h-4" />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ============================================================== */}
-      {/* VIEW 2: CẤU TRÚC ĐỀ THI 2026-2027 (CÔNG VĂN SỞ GD&ĐT) */}
-      {/* ============================================================== */}
-      {!activeChallenge && activeHubView === 'standards' && (
-        <div className="space-y-6">
-          {/* OFFICIAL HEADER BANNER */}
-          <div className="bg-gradient-to-r from-purple-900 via-indigo-900 to-slate-900 text-white p-6 sm:p-8 rounded-3xl border border-purple-500/40 shadow-xl space-y-4">
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="px-3 py-1 rounded-full bg-amber-400 text-slate-950 font-black text-xs uppercase tracking-wider">
-                VĂN BẢN CHÍNH THỨC
-              </span>
-              <span className="text-purple-200 text-xs">
-                Sở Giáo dục và Đào tạo • Áp dụng từ năm học 2026 - 2027
-              </span>
-            </div>
-
-            <h2 className="text-xl sm:text-2xl font-black leading-snug">
-              {OFFICIAL_HSG_STANDARD.title}
-            </h2>
-
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2 text-xs">
-              <div className="p-3 rounded-2xl bg-white/10 backdrop-blur-md border border-white/10">
-                <div className="text-slate-300">Hình thức thi:</div>
-                <div className="font-bold text-white text-sm">{OFFICIAL_HSG_STANDARD.format}</div>
-              </div>
-              <div className="p-3 rounded-2xl bg-white/10 backdrop-blur-md border border-white/10">
-                <div className="text-slate-300">Thời gian làm bài:</div>
-                <div className="font-bold text-white text-sm">{OFFICIAL_HSG_STANDARD.duration} phút</div>
-              </div>
-              <div className="p-3 rounded-2xl bg-white/10 backdrop-blur-md border border-white/10">
-                <div className="text-slate-300">Thang điểm:</div>
-                <div className="font-bold text-amber-400 text-sm">{OFFICIAL_HSG_STANDARD.totalPoints} điểm</div>
-              </div>
-              <div className="p-3 rounded-2xl bg-white/10 backdrop-blur-md border border-white/10">
-                <div className="text-slate-300">Tỉ lệ mức độ:</div>
-                <div className="font-bold text-white text-xs">{OFFICIAL_HSG_STANDARD.ratio}</div>
-              </div>
-            </div>
-          </div>
-
-          {/* 3 MẠCH KIẾN THỨC CHÍNH */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-            {OFFICIAL_HSG_STANDARD.domains.map((dom, i) => (
-              <div
-                key={i}
-                className="bg-white dark:bg-slate-800 rounded-3xl border border-slate-200 dark:border-slate-700 p-6 shadow-sm space-y-3 flex flex-col justify-between"
-              >
+                {/* THINKING CHALLENGES LIST */}
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
-                    <span className="font-bold text-xs uppercase tracking-wider text-purple-600 dark:text-purple-400">
-                      Mạch {i + 1}
-                    </span>
-                    <span className="px-3 py-1 rounded-full bg-purple-50 dark:bg-purple-950 text-purple-700 dark:text-purple-300 font-black text-sm">
-                      {dom.points.toFixed(1)} Điểm
-                    </span>
+                    <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+                      <Award className="w-4 h-4 text-amber-500" />
+                      <span>Bài tập tư duy phân hóa cấp tỉnh / thành phố:</span>
+                    </h3>
                   </div>
 
-                  <h3 className="text-lg font-black text-slate-900 dark:text-white">
-                    {dom.name}
-                  </h3>
+                  <div className="space-y-3">
+                    {selectedTopic.challenges.map((ch) => (
+                      <div
+                        key={ch.id}
+                        className="p-5 rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50/60 dark:bg-slate-900/40 hover:border-purple-300 dark:hover:border-purple-700 transition space-y-3"
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-2">
+                              <div className="flex text-amber-400">
+                                {Array.from({ length: ch.stars }).map((_, i) => (
+                                  <Star key={i} className="w-3.5 h-3.5 fill-amber-400" />
+                                ))}
+                              </div>
+                              <span className="text-xs font-bold text-amber-600 dark:text-amber-400">
+                                {ch.starLabel}
+                              </span>
+                            </div>
+                            <h4 className="font-bold text-sm text-slate-900 dark:text-white">
+                              <MathView text={ch.title} />
+                            </h4>
+                          </div>
 
-                  <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-                    {dom.description}
-                  </p>
-
-                  <div className="space-y-2 pt-2 border-t border-slate-100 dark:border-slate-700">
-                    {dom.topics.map((t, idx) => (
-                      <div key={idx} className="text-xs space-y-0.5">
-                        <div className="font-bold text-slate-800 dark:text-slate-200">
-                          • {t.title}:
+                          <button
+                            onClick={() => handleSelectChallenge(ch)}
+                            className="px-3.5 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs transition shadow-sm shrink-0 cursor-pointer flex items-center gap-1"
+                          >
+                            <span>GIẢI BÀI</span>
+                            <ChevronRight className="w-3.5 h-3.5" />
+                          </button>
                         </div>
-                        <div className="text-[11px] text-slate-500 dark:text-slate-400 pl-2 leading-relaxed">
-                          {t.requirements}
+
+                        <div className="text-xs text-slate-600 dark:text-slate-300 line-clamp-2 leading-relaxed">
+                          <MathView text={ch.problem} />
                         </div>
                       </div>
                     ))}
                   </div>
                 </div>
               </div>
-            ))}
-          </div>
-
-          {/* CẤU TRÚC 5 BÀI THI CHI TIẾT */}
-          <div className="space-y-4">
-            <h3 className="text-lg font-black text-slate-900 dark:text-white flex items-center gap-2">
-              <ListOrdered className="w-5 h-5 text-purple-600" />
-              <span>Cấu trúc 5 Bài thi chuẩn mực (Thang điểm 20.0):</span>
-            </h3>
-
-            <div className="space-y-3">
-              {OFFICIAL_HSG_STANDARD.examStructure.map((q) => (
-                <div
-                  key={q.number}
-                  className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-5 shadow-sm space-y-3"
-                >
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 dark:border-slate-700 pb-3">
-                    <span className="font-black text-base text-purple-700 dark:text-purple-300">
-                      {q.title}
-                    </span>
-                    <span className="px-3 py-1 rounded-full bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 font-black text-xs border border-amber-200 dark:border-amber-800 self-start sm:self-auto">
-                      {q.points.toFixed(1)} Điểm
-                    </span>
-                  </div>
-
-                  <div className="space-y-1.5 text-xs text-slate-700 dark:text-slate-300">
-                    <div className="font-bold text-slate-400 uppercase text-[11px]">
-                      Phân bổ các lệnh hỏi:
-                    </div>
-                    {q.subtopics.map((sub, idx) => (
-                      <div key={idx} className="flex items-center gap-2">
-                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
-                        <span>{sub}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ))}
             </div>
           </div>
         </div>
       )}
 
       {/* ============================================================== */}
-      {/* VIEW 3: CẨM NANG ĐỊNH LÝ ĐƯỢC PHÉP DÙNG NHƯ SGK */}
+      {/* VIEW 4: CẤU TRÚC ĐỀ THI 2026 - 2027 (CÔNG VĂN SỞ GD&ĐT) */}
       {/* ============================================================== */}
-      {!activeChallenge && activeHubView === 'theorems' && (
-        <div className="space-y-6">
-          <div className="bg-gradient-to-r from-blue-900 via-indigo-900 to-purple-900 text-white p-6 sm:p-7 rounded-3xl border border-blue-400/40 shadow-xl space-y-3">
-            <div className="flex items-center gap-2">
-              <span className="px-2.5 py-0.5 rounded-full bg-blue-400 text-slate-950 text-[11px] font-black uppercase">
-                Mục IV Công Văn Sở GD&ĐT
-              </span>
-              <span className="text-blue-200 text-xs">Quy định thi HSG 2026 - 2027</span>
-            </div>
-            <h2 className="text-xl sm:text-2xl font-black">
-              Các Khái Niệm, Kết Quả Được Phép Sử Dụng Như SGK
+      {!activeChallenge && activeHubView === 'standards' && (
+        <div className="bg-white dark:bg-slate-800 rounded-3xl border border-slate-200 dark:border-slate-700 p-6 sm:p-10 shadow-sm space-y-8">
+          <div className="border-b border-slate-200 dark:border-slate-700 pb-5 space-y-2">
+            <span className="text-xs font-black px-3 py-1 rounded-full bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300 uppercase tracking-wider">
+              Văn bản chính thức
+            </span>
+            <h2 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight">
+              {OFFICIAL_HSG_STANDARD.title}
             </h2>
-            <p className="text-xs sm:text-sm text-slate-200 leading-relaxed max-w-3xl">
-              Học sinh được phép sử dụng trực tiếp các định lý, bất đẳng thức và hệ thức dưới đây trong bài làm thi HSG
-              mà không bắt buộc phải chứng minh lại, giúp tiết kiệm thời gian và trình bày bài thi mạch lạc, tự tin.
+            <p className="text-xs text-slate-500 dark:text-slate-400">
+              Cơ quan ban hành: <strong>{OFFICIAL_HSG_STANDARD.agency}</strong> • Áp dụng từ năm học 2026 - 2027
             </p>
           </div>
 
-          {/* FILTER & SEARCH */}
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-200 dark:border-slate-700">
-            <div className="flex items-center gap-2 overflow-x-auto w-full sm:w-auto">
-              {['all', 'Đại số', 'Số học', 'Tổ hợp', 'Hình học'].map((cat) => (
+          {/* 3 SUMMARY CARDS */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="p-5 rounded-2xl bg-blue-50/70 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800/60 space-y-1">
+              <span className="text-xs font-bold text-blue-600 dark:text-blue-400 uppercase">
+                Thời gian làm bài
+              </span>
+              <div className="text-2xl font-black text-blue-900 dark:text-blue-100">
+                {OFFICIAL_HSG_STANDARD.durationMinutes} Phút
+              </div>
+              <p className="text-[11px] text-blue-700 dark:text-blue-300">
+                150 phút tự luận tập trung
+              </p>
+            </div>
+
+            <div className="p-5 rounded-2xl bg-purple-50/70 dark:bg-purple-950/40 border border-purple-200 dark:border-purple-800/60 space-y-1">
+              <span className="text-xs font-bold text-purple-600 dark:text-purple-400 uppercase">
+                Thang điểm chính thức
+              </span>
+              <div className="text-2xl font-black text-purple-900 dark:text-purple-100">
+                {OFFICIAL_HSG_STANDARD.totalPoints.toFixed(1)} Điểm
+              </div>
+              <p className="text-[11px] text-purple-700 dark:text-purple-300">
+                5 bài toán lớn (tổng 20,0đ)
+              </p>
+            </div>
+
+            <div className="p-5 rounded-2xl bg-emerald-50/70 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 space-y-1">
+              <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 uppercase">
+                Hình thức thi
+              </span>
+              <div className="text-2xl font-black text-emerald-900 dark:text-emerald-100">
+                Tự Luận 100%
+              </div>
+              <p className="text-[11px] text-emerald-700 dark:text-emerald-300">
+                Biết 40% • Hiểu 30% • Vận dụng 30%
+              </p>
+            </div>
+          </div>
+
+          {/* TABLE OF 5 PROBLEMS */}
+          <div className="space-y-4">
+            <h3 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">
+              Khung định dạng chi tiết 5 bài toán:
+            </h3>
+
+            <div className="overflow-x-auto rounded-2xl border border-slate-200 dark:border-slate-700">
+              <table className="w-full text-left text-xs">
+                <thead className="bg-slate-100 dark:bg-slate-700/60 text-slate-700 dark:text-slate-200 uppercase font-black">
+                  <tr>
+                    <th className="p-3.5">Bài thi</th>
+                    <th className="p-3.5">Điểm</th>
+                    <th className="p-3.5">Chủ đề & Nội dung kiểm tra</th>
+                    <th className="p-3.5">Phân bổ điểm chi tiết</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
+                  {(OFFICIAL_HSG_STANDARD.structure || []).map((item, idx) => (
+                    <tr key={idx} className="hover:bg-slate-50 dark:hover:bg-slate-800/50">
+                      <td className="p-3.5 font-bold text-purple-600 dark:text-purple-400 whitespace-nowrap">
+                        {item.problem}
+                      </td>
+                      <td className="p-3.5 font-black text-slate-900 dark:text-white whitespace-nowrap">
+                        {item.points.toFixed(1)}đ
+                      </td>
+                      <td className="p-3.5 font-semibold text-slate-800 dark:text-slate-200">
+                        {item.title}
+                      </td>
+                      <td className="p-3.5 text-slate-600 dark:text-slate-300">
+                        <ul className="list-disc pl-4 space-y-1">
+                          {item.subparts.map((sub, sIdx) => (
+                            <li key={sIdx}>{sub}</li>
+                          ))}
+                        </ul>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ============================================================== */}
+      {/* VIEW 5: CẨM NANG ĐỊNH LÝ ĐƯỢC PHÉP DÙNG NHƯ SGK */}
+      {/* ============================================================== */}
+      {!activeChallenge && activeHubView === 'theorems' && (
+        <div className="bg-white dark:bg-slate-800 rounded-3xl border border-slate-200 dark:border-slate-700 p-6 sm:p-10 shadow-sm space-y-6">
+          <div className="border-b border-slate-200 dark:border-slate-700 pb-4 space-y-1">
+            <h2 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white flex items-center gap-2">
+              <Sparkles className="w-6 h-6 text-amber-500" />
+              <span>Cẩm Nang Các Định Lý Được Phép Sử Dụng Như SGK</span>
+            </h2>
+            <p className="text-xs text-slate-500 dark:text-slate-400">
+              Tổng hợp theo quy định chính thức: Thí sinh được phép áp dụng trực tiếp kết quả các định lý này mà không cần chứng minh lại.
+            </p>
+          </div>
+
+          {/* SEARCH & CATEGORY FILTER */}
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+            <div className="flex items-center gap-2 overflow-x-auto pb-1 text-xs">
+              {[
+                { id: 'all', label: 'Tất cả định lý' },
+                { id: 'Hình học', label: '⭕ Hình học (Menelaus, Ceva, Ptolemy...)' },
+                { id: 'Đại số', label: '📐 Đại số (Viète bậc 3, Bézout, BĐT...)' },
+                { id: 'Số học', label: '🔢 Số học (Fermat, Euler...)' },
+                { id: 'Tổ hợp', label: '🎲 Tổ hợp (Dirichlet, Cực hạn...)' },
+              ].map((c) => (
                 <button
-                  key={cat}
-                  onClick={() => setSelectedTheoremCategory(cat)}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition whitespace-nowrap cursor-pointer ${
-                    selectedTheoremCategory === cat
-                      ? 'bg-purple-600 text-white shadow'
+                  key={c.id}
+                  onClick={() => setSelectedTheoremCategory(c.id)}
+                  className={`px-3 py-1.5 rounded-xl font-bold transition whitespace-nowrap cursor-pointer ${
+                    selectedTheoremCategory === c.id
+                      ? 'bg-amber-500 text-white shadow-sm'
                       : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200'
                   }`}
                 >
-                  {cat === 'all' ? 'Tất cả' : cat}
+                  {c.label}
                 </button>
               ))}
             </div>
 
-            <div className="relative w-full sm:w-72">
-              <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+            <div className="relative">
+              <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2.5" />
               <input
                 type="text"
-                placeholder="Tìm tên định lý, từ khóa..."
                 value={theoremSearch}
                 onChange={(e) => setTheoremSearch(e.target.value)}
-                className="w-full pl-9 pr-4 py-2 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-purple-500"
+                placeholder="Tìm tên định lý..."
+                className="pl-8 pr-3 py-1.5 text-xs rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white outline-none w-full sm:w-48"
               />
             </div>
           </div>
 
-          {/* THEOREMS GRID */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+          {/* THEOREMS LIST */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {filteredTheorems.map((th, idx) => (
               <div
                 key={idx}
-                className="bg-white dark:bg-slate-800 rounded-3xl border border-slate-200 dark:border-slate-700 p-6 shadow-sm space-y-3 flex flex-col justify-between"
+                className="p-5 rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50/60 dark:bg-slate-900/40 space-y-3"
               >
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="px-2.5 py-0.5 rounded-full bg-purple-50 dark:bg-purple-950/80 text-purple-700 dark:text-purple-300 font-bold text-[10px] border border-purple-200 dark:border-purple-800">
-                      {th.category}
-                    </span>
-                    <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase">
-                      ✓ Dùng trực tiếp
-                    </span>
-                  </div>
-
-                  <h3 className="text-base font-bold text-slate-900 dark:text-white">
-                    {th.name}
-                  </h3>
-
-                  {th.latex && (
-                    <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-700 text-center font-mono text-xs overflow-x-auto text-purple-700 dark:text-purple-300">
-                      <MathView text={th.latex} block />
-                    </div>
-                  )}
-
-                  <div className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-line">
-                    <MathView text={th.statement} />
-                  </div>
-
-                  <div className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed pt-1 border-t border-slate-100 dark:border-slate-700">
-                    <strong>Bản chất:</strong> {th.explanation}
-                  </div>
+                <div className="flex items-center justify-between">
+                  <h4 className="font-black text-sm text-amber-900 dark:text-amber-300">
+                    ⭐ {th.name}
+                  </h4>
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300">
+                    {th.category}
+                  </span>
                 </div>
 
-                <div className="p-3 rounded-xl bg-amber-50/70 dark:bg-amber-950/30 border border-amber-200/70 dark:border-amber-800/40 text-[11px] text-amber-900 dark:text-amber-200 mt-2">
-                  <strong>💡 Mẹo vận dụng trong bài thi:</strong> {th.usageTip}
+                <div className="p-3 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 text-xs text-slate-900 dark:text-white leading-relaxed">
+                  <MathView text={th.statement} />
                 </div>
+
+                <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
+                  <strong>Cách áp dụng trong bài thi:</strong> {th.explanation}
+                </p>
               </div>
             ))}
           </div>
@@ -637,132 +1054,10 @@ export const GiftedMathHub: React.FC<GiftedMathHubProps> = ({ onOpenAICoach }) =
       )}
 
       {/* ============================================================== */}
-      {/* VIEW 4: ĐỀ THI THỬ HỌC SINH GIỎI CẤP THÀNH PHỐ (20 ĐIỂM) */}
-      {/* ============================================================== */}
-      {!activeChallenge && activeHubView === 'mock_exam' && (
-        <div className="space-y-6">
-          {/* EXAM TOP HEADER */}
-          <div className="bg-white dark:bg-slate-800 rounded-3xl border border-slate-200 dark:border-slate-700 p-6 sm:p-8 shadow-sm space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 dark:border-slate-700 pb-4">
-              <div>
-                <span className="text-xs font-bold text-purple-600 dark:text-purple-400 uppercase tracking-wider">
-                  KỲ THI CHỌN HỌC SINH GIỎI THCS CẤP THÀNH PHỐ NĂM HỌC 2026 - 2027
-                </span>
-                <h2 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white mt-1">
-                  Đề Thi Thử Học Sinh Giỏi Môn Toán 9 (Tự Luận 100%)
-                </h2>
-                <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                  Thời gian làm bài: 150 phút (không kể thời gian giao đề) • Thang điểm: 20,0 điểm
-                </div>
-              </div>
-
-              <div className="px-4 py-2 rounded-2xl bg-purple-50 dark:bg-purple-950/60 border border-purple-200 dark:border-purple-800 text-center shrink-0">
-                <div className="text-[10px] text-purple-600 dark:text-purple-400 font-bold uppercase">
-                  Tổng điểm
-                </div>
-                <div className="text-2xl font-black text-purple-700 dark:text-purple-300">
-                  20.0
-                </div>
-              </div>
-            </div>
-
-            <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed italic">
-              * Thí sinh không được sử dụng máy tính cầm tay khi làm bài thi chọn học sinh giỏi theo quy định.
-              Bài làm cần trình bày chi tiết từng bước lập luận, biến đổi và kết luận rõ ràng.
-            </p>
-          </div>
-
-          {/* 5 PROBLEMS ACCORDION */}
-          <div className="space-y-4">
-            {OFFICIAL_HSG_STANDARD.examStructure.map((item) => {
-              const isExpanded = !!expandedExamQuestions[item.number];
-              return (
-                <div
-                  key={item.number}
-                  className="bg-white dark:bg-slate-800 rounded-3xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden"
-                >
-                  {/* QUESTION HEADER BAR */}
-                  <div
-                    onClick={() => toggleExamQuestion(item.number)}
-                    className="p-5 sm:p-6 flex items-center justify-between gap-4 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-750 transition"
-                  >
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2">
-                        <span className="font-black text-base text-slate-900 dark:text-white">
-                          {item.title}
-                        </span>
-                        <span className="px-2.5 py-0.5 rounded-full bg-purple-100 dark:bg-purple-950 text-purple-700 dark:text-purple-300 text-xs font-bold">
-                          {item.points.toFixed(1)} điểm
-                        </span>
-                      </div>
-                      <div className="text-xs text-slate-500 dark:text-slate-400">
-                        {item.instruction}
-                      </div>
-                    </div>
-
-                    <button className="p-2 rounded-xl bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 shrink-0">
-                      {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                    </button>
-                  </div>
-
-                  {/* QUESTION DETAILS & RUBRIC */}
-                  {isExpanded && (
-                    <div className="px-5 sm:px-6 pb-6 pt-2 border-t border-slate-100 dark:border-slate-700 space-y-4 text-xs animate-fade-in">
-                      {/* Problem Statement */}
-                      <div className="space-y-1.5">
-                        <div className="font-bold text-slate-400 uppercase text-[11px]">
-                          Nội dung đề bài:
-                        </div>
-                        <div className="p-4 rounded-2xl bg-purple-50/50 dark:bg-slate-900/60 border border-purple-200/60 dark:border-slate-700 text-xs sm:text-sm font-semibold text-slate-900 dark:text-white leading-relaxed">
-                          <MathView text={item.sampleQuestion} />
-                        </div>
-                      </div>
-
-                      {/* Solution Guide */}
-                      <div className="space-y-1.5">
-                        <div className="font-bold text-emerald-600 dark:text-emerald-400 uppercase text-[11px] flex items-center gap-1.5">
-                          <Award className="w-3.5 h-3.5" />
-                          <span>Hướng dẫn giải chi tiết chuẩn mực:</span>
-                        </div>
-                        <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/90 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 leading-relaxed whitespace-pre-line text-xs sm:text-sm font-serif">
-                          <MathView text={item.solutionGuide} />
-                        </div>
-                      </div>
-
-                      {/* Official Rubric (Biểu điểm chi tiết) */}
-                      <div className="space-y-1.5 pt-2">
-                        <div className="font-bold text-slate-400 uppercase text-[11px] flex items-center gap-1.5">
-                          <Scale className="w-3.5 h-3.5 text-blue-500" />
-                          <span>Biểu điểm và barem chấm điểm (Tổng: {item.points.toFixed(1)}đ):</span>
-                        </div>
-                        <div className="divide-y divide-slate-100 dark:divide-slate-700 border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden bg-white dark:bg-slate-800">
-                          {item.rubric.map((r, rIdx) => (
-                            <div key={rIdx} className="p-3 flex items-center justify-between gap-4 text-xs">
-                              <span className="text-slate-700 dark:text-slate-300">
-                                {r.step}
-                              </span>
-                              <span className="font-mono font-bold text-purple-600 dark:text-purple-400 shrink-0">
-                                +{r.score.toFixed(2)} đ
-                              </span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
-      {/* ============================================================== */}
-      {/* VIEW 5: SOLVING ARENA FOR 5-STAR CHALLENGE (KHI CHỌN VÀO GIẢI) */}
+      {/* VIEW 6: SOLVING ARENA FOR 5-STAR CHALLENGE (KHI CHỌN VÀO GIẢI) */}
       {/* ============================================================== */}
       {activeChallenge && (
         <div className="bg-white dark:bg-slate-800 rounded-3xl border border-slate-200 dark:border-slate-700 p-6 sm:p-8 shadow-sm space-y-6">
-          {/* PROBLEM HEADER */}
           <div className="space-y-2 border-b border-slate-100 dark:border-slate-700 pb-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
@@ -789,20 +1084,17 @@ export const GiftedMathHub: React.FC<GiftedMathHubProps> = ({ onOpenAICoach }) =
             </h3>
           </div>
 
-          {/* PROBLEM BODY */}
           <div className="p-6 rounded-2xl bg-purple-50/50 dark:bg-slate-900/60 border border-purple-200/60 dark:border-slate-700 text-sm sm:text-base font-semibold text-slate-900 dark:text-white leading-relaxed">
             <MathView text={activeChallenge.problem} />
           </div>
 
-          {/* SECTION 20: TỰ GIẢI TRƯỚC - GỢI Ý BẬC THANG (KHÔNG SHOW NGAY TOÀN BỘ) */}
           <div className="space-y-3">
             <div className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
               <Lightbulb className="w-4 h-4 text-amber-500" />
-              <span>Hệ thống Gợi ý Tư duy Bậc thang (Mục 20):</span>
+              <span>Hệ thống Gợi ý Tư duy Bậc thang:</span>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              {/* BUTTON GỢI Ý 1 */}
               <button
                 onClick={() => setRevealedHint1(true)}
                 className={`p-3.5 rounded-xl border text-xs font-bold transition flex items-center justify-between cursor-pointer ${
@@ -815,7 +1107,6 @@ export const GiftedMathHub: React.FC<GiftedMathHubProps> = ({ onOpenAICoach }) =
                 {revealedHint1 && <span className="text-[10px] bg-blue-600 text-white px-1.5 py-0.5 rounded">Đã mở</span>}
               </button>
 
-              {/* BUTTON GỢI Ý 2 */}
               <button
                 onClick={() => setRevealedHint2(true)}
                 className={`p-3.5 rounded-xl border text-xs font-bold transition flex items-center justify-between cursor-pointer ${
@@ -828,7 +1119,6 @@ export const GiftedMathHub: React.FC<GiftedMathHubProps> = ({ onOpenAICoach }) =
                 {revealedHint2 && <span className="text-[10px] bg-indigo-600 text-white px-1.5 py-0.5 rounded">Đã mở</span>}
               </button>
 
-              {/* BUTTON GỢI Ý PHƯƠNG PHÁP */}
               <button
                 onClick={() => setRevealedMethodHint(true)}
                 className={`p-3.5 rounded-xl border text-xs font-bold transition flex items-center justify-between cursor-pointer ${
@@ -842,7 +1132,6 @@ export const GiftedMathHub: React.FC<GiftedMathHubProps> = ({ onOpenAICoach }) =
               </button>
             </div>
 
-            {/* HINTS ACCORDION CARDS */}
             {revealedHint1 && (
               <div className="p-4 rounded-xl bg-blue-50/70 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 text-xs text-blue-900 dark:text-blue-200 animate-fade-in space-y-1">
                 <span className="font-bold text-blue-700 dark:text-blue-300">• Gợi ý 1:</span>
@@ -865,7 +1154,6 @@ export const GiftedMathHub: React.FC<GiftedMathHubProps> = ({ onOpenAICoach }) =
             )}
           </div>
 
-          {/* FULL SOLUTION TOGGLE (SECTION 20: Only when explicitly requested) */}
           <div className="pt-4 border-t border-slate-200 dark:border-slate-700 space-y-4">
             {!revealedFullSolution ? (
               <button

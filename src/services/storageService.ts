@@ -26,6 +26,8 @@ import {
   INITIAL_DOCUMENTS,
 } from '../data/mockDatabase';
 import { ALL_CURRICULUM_LESSONS, getCurriculumLessonsForChapter } from '../data/allCurriculumLessons';
+import { generate10QuestionsForLesson } from '../data/lessonPracticeQuestions';
+import { STANDARD_10_EXAMS } from '../data/standard10ExamsBank';
 
 const STORAGE_KEYS = {
   USERS: 'toanthcs_users_v2',
@@ -164,8 +166,9 @@ class StorageService {
     if (!localStorage.getItem(STORAGE_KEYS.QUESTIONS)) {
       localStorage.setItem(STORAGE_KEYS.QUESTIONS, JSON.stringify(INITIAL_QUESTIONS));
     }
-    if (!localStorage.getItem(STORAGE_KEYS.EXAMS)) {
-      localStorage.setItem(STORAGE_KEYS.EXAMS, JSON.stringify([SAMPLE_EXAM_7991]));
+    const storedExams = localStorage.getItem(STORAGE_KEYS.EXAMS);
+    if (!storedExams || JSON.parse(storedExams).length < STANDARD_10_EXAMS.length) {
+      localStorage.setItem(STORAGE_KEYS.EXAMS, JSON.stringify(STANDARD_10_EXAMS));
     }
     if (!localStorage.getItem(STORAGE_KEYS.MATRICES)) {
       localStorage.setItem(STORAGE_KEYS.MATRICES, JSON.stringify([SAMPLE_MATRIX_7991]));
@@ -494,11 +497,19 @@ class StorageService {
   public getQuestions(filter?: { grade?: number; topic?: string; level?: string; chapterId?: string; lessonId?: string }): Question[] {
     let all: Question[] = JSON.parse(localStorage.getItem(STORAGE_KEYS.QUESTIONS) || '[]');
     if (filter) {
+      if (filter.lessonId) {
+        const lessonQuestions = all.filter((q) => q.lessonId === filter.lessonId);
+        if (lessonQuestions.length >= 10) return lessonQuestions;
+        // Dynamically provide 10 rich questions for this lesson
+        return generate10QuestionsForLesson(filter.lessonId, (filter.grade as any) || 9, 'Bài học');
+      }
       if (filter.grade) all = all.filter((q) => q.grade === filter.grade);
       if (filter.chapterId) all = all.filter((q) => q.chapterId === filter.chapterId);
-      if (filter.lessonId) all = all.filter((q) => q.lessonId === filter.lessonId);
-      if (filter.topic) all = all.filter((q) => q.topic.toLowerCase().includes(filter.topic!.toLowerCase()));
+      if (filter.topic) all = all.filter((q) => (q.topic || '').toLowerCase().includes(filter.topic!.toLowerCase()));
       if (filter.level) all = all.filter((q) => q.level === filter.level);
+    }
+    if (all.length === 0 && filter?.grade) {
+      return generate10QuestionsForLesson('sample-les', filter.grade as any, 'Luyện tập tổng hợp');
     }
     return all;
   }
@@ -525,10 +536,19 @@ class StorageService {
     localStorage.setItem(STORAGE_KEYS.QUESTIONS, JSON.stringify(all));
   }
 
+  public getLessonPracticeQuestions(lessonId: string, grade: any = 9, lessonTitle: string = 'Luyện tập bài học'): Question[] {
+    return generate10QuestionsForLesson(lessonId, grade, lessonTitle);
+  }
+
   // ---------------- EXAMS & CÔNG VĂN 7991 ---------------- //
 
   public getExams(): Exam[] {
-    return JSON.parse(localStorage.getItem(STORAGE_KEYS.EXAMS) || '[]');
+    const stored = JSON.parse(localStorage.getItem(STORAGE_KEYS.EXAMS) || '[]');
+    if (!stored || stored.length < STANDARD_10_EXAMS.length) {
+      localStorage.setItem(STORAGE_KEYS.EXAMS, JSON.stringify(STANDARD_10_EXAMS));
+      return STANDARD_10_EXAMS;
+    }
+    return stored;
   }
 
   public getExamById(id: string): Exam | undefined {

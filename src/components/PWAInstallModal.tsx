@@ -141,22 +141,24 @@ export const PWAInstallModal: React.FC<PWAInstallModalProps> = ({
         <div className="p-5 sm:p-6 space-y-5 max-h-[80vh] overflow-y-auto">
           {mode === 'install' ? (
             <>
-              {/* 1. APP ICON PREVIEW CARD (MATHEMATICAL PI SYMBOL) */}
+              {/* 1. APP ICON PREVIEW CARD (MATHEMATICAL PI SYMBOL & TOÁNTHCS BADGE) */}
               <div className="flex items-center gap-4 p-4 rounded-2xl bg-gradient-to-r from-blue-50/90 via-indigo-50/80 to-sky-50/70 dark:from-slate-800/90 dark:via-indigo-950/40 dark:to-slate-800/90 border border-blue-200/80 dark:border-blue-900/60 shadow-sm">
-                <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-blue-700 via-indigo-600 to-sky-500 text-white flex items-center justify-center font-serif text-4xl font-bold shadow-lg shadow-blue-500/30 border-2 border-white/40 shrink-0 select-none">
-                  π
-                </div>
+                <img
+                  src="/icon.svg"
+                  alt="Biểu tượng Pi Nghệ thuật & ToánTHCS"
+                  className="w-16 h-16 rounded-2xl shadow-lg border-2 border-white/60 dark:border-slate-700 shrink-0 object-cover"
+                />
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="font-extrabold text-slate-900 dark:text-white text-sm sm:text-base tracking-tight">
                       APP ÔN LUYỆN TOÁN THCS
                     </span>
-                    <span className="text-[10px] font-black bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-2 py-0.5 rounded-full shadow-xs">
-                      Icon: Số Pi (π)
+                    <span className="text-[10px] font-black bg-gradient-to-r from-amber-500 to-orange-500 text-white px-2 py-0.5 rounded-full shadow-xs">
+                      Icon Nghệ Thuật: Số Pi (π) + ToánTHCS
                     </span>
                   </div>
-                  <p className="text-xs text-blue-700 dark:text-blue-300 font-semibold mt-0.5">
-                    Biểu tượng số Pi (π) Toán học xuất hiện trên màn hình chính
+                  <p className="text-xs text-blue-700 dark:text-blue-300 font-bold mt-0.5">
+                    Biểu tượng số Pi (π) Toán học sắc nét nghệ thuật & chữ "ToánTHCS" xuất hiện trên màn hình chính
                   </p>
                   <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate">
                     © 2026 Teacher Lê Thanh Tùng • Trường TH, THCS Nguyễn Hữu Cảnh

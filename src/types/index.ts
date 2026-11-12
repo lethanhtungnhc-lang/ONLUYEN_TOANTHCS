@@ -91,7 +91,8 @@ export type DifficultyLevel =
   | 'recognition'     // Nhận biết (40%)
   | 'understanding'   // Thông hiểu (30%)
   | 'application'     // Vận dụng (20%)
-  | 'high_application'; // Vận dụng cao (10%)
+  | 'high_application' // Vận dụng cao (10%)
+  | 'advanced';
 
 export interface QuestionBreakdown {
   analysis: string;        // Phân tích đề bài
@@ -106,28 +107,32 @@ export interface QuestionBreakdown {
 
 export interface Question {
   id: string;
-  code: string;
-  grade: GradeLevel;
+  code?: string;
+  grade?: GradeLevel;
   semester?: Semester;
   chapterId?: string;
   lessonId?: string;
-  topic: string;
+  topic?: string;
   type: QuestionType;
-  level: DifficultyLevel;
+  level?: DifficultyLevel;
+  difficulty?: DifficultyLevel;
   content: string;
   options?: string[]; // Cho trắc nghiệm 4 phương án A, B, C, D
   matchingPairs?: { left: string; right: string }[];
-  correctAnswer: string | boolean | Record<string, string>;
-  explanation: string;
-  breakdown: QuestionBreakdown;
-  points: number;
-  competency: string; // Năng lực Toán học (Tư duy & lập luận, Mô hình hóa, Giải quyết vấn đề...)
+  correctAnswer?: string | boolean | Record<string, string>;
+  explanation?: string;
+  breakdown?: QuestionBreakdown;
+  stepByStepSolution?: string;
+  misconception?: string;
+  points?: number;
+  competency?: string; // Năng lực Toán học
 }
 
 export interface ExamPart {
   partNumber: number;
   title: string;
-  instruction: string;
+  instruction?: string;
+  description?: string;
   questions: Question[];
 }
 
@@ -135,18 +140,20 @@ export interface Exam {
   id: string;
   title: string;
   code: string;
+  academicYear?: string;
+  semester?: any;
   grade: GradeLevel;
   durationMinutes: number;
   schoolName: string;
-  copyright: string;
-  examType: 'regular' | 'mid_term' | 'final_term' | 'admission_10' | 'gifted_math';
+  copyright?: string;
+  examType?: 'regular' | 'mid_term' | 'final_term' | 'admission_10' | 'gifted_math';
   parts: ExamPart[];
   totalPoints: number;
-  totalQuestions: number;
+  totalQuestions?: number;
   matrixId?: string;
   specId?: string;
   rubricId?: string;
-  createdAt: string;
+  createdAt?: string;
 }
 
 export interface MatrixRow {
@@ -256,6 +263,8 @@ export interface GiftedTopic {
   domain: 'arithmetic' | 'algebra' | 'geometry' | 'combinatorics' | 'applied';
   domainName: string;
   title: string;
+  description?: string;
+  theoreticalFoundation?: string;
   corePhilosophy: string;
   thinkingIdea: string;
   methods: string[];

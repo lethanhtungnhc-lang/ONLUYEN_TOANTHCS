@@ -249,8 +249,8 @@ function getDefaultRubricRows(exam: Exam) {
           q.breakdown?.method || 'Nêu phương pháp giải và điều kiện xác định',
           ...(q.breakdown?.steps || ['Thực hiện phép tính theo quy tắc', 'Đối chiếu điều kiện và rút ra kết luận']),
         ],
-        partialScores: [q.points * 0.4, q.points * 0.6],
-        totalPoints: q.points,
+        partialScores: [(q.points || 0.25) * 0.4, (q.points || 0.25) * 0.6],
+        totalPoints: q.points || 0.25,
         notes: 'Chấp nhận các cách giải khác đúng theo chuẩn kiến thức.',
       });
     });

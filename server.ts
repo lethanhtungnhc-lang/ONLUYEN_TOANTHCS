@@ -141,6 +141,11 @@ app.post('/api/gemini/proofread', async (req, res) => {
   }
 });
 
+// Health check endpoint for system supervision
+app.get('/api/health', (_req, res) => {
+  res.status(200).json({ status: 'ok', time: new Date().toISOString() });
+});
+
 function getArg(flag: string): string | undefined {
   const index = process.argv.indexOf(flag);
   return index !== -1 && index + 1 < process.argv.length ? process.argv[index + 1] : undefined;
@@ -149,8 +154,7 @@ function getArg(flag: string): string | undefined {
 const cliPort = getArg('--port') || getArg('-p');
 const cliHost = getArg('--host') || getArg('-h');
 
-// Dev server must always bind to port 3000 as required by the environment
-// and proxy configuration. If CLI flag --port is passed, respect it.
+// Dev server must always bind to port 3000 as required by AI Studio environment
 const PORT = Number(cliPort || process.env.DEFAULT_APP_PORT || (process.env.NODE_ENV === 'production' && process.env.PORT !== '8080' ? process.env.PORT : 3000));
 const HOST = cliHost || '0.0.0.0';
 
@@ -159,7 +163,7 @@ async function startServer() {
   if (process.env.NODE_ENV !== 'production') {
     const { createServer } = await import('vite');
     const vite = await createServer({
-      server: { middlewareMode: true, hmr: process.env.DISABLE_HMR !== 'true' },
+      server: { middlewareMode: true, hmr: false },
       appType: 'spa',
     });
     app.use(vite.middlewares);
@@ -185,10 +189,18 @@ async function startServer() {
     });
   }
 
-  app.listen(PORT, HOST, () => {
+  const server = app.listen(PORT, HOST, () => {
     console.log(`\n  VITE v8.3.0  ready in 150 ms\n`);
     console.log(`  ➜  Local:   http://localhost:${PORT}/`);
     console.log(`  ➜  Network: http://${HOST}:${PORT}/\n`);
+  });
+
+  server.on('error', (err: any) => {
+    if (err.code === 'EADDRINUSE') {
+      console.log(`Port ${PORT} is already in use by active process. Keeping running.`);
+    } else {
+      console.error('Server error:', err);
+    }
   });
 }
 
